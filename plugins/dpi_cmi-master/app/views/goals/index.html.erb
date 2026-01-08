@@ -1,0 +1,117 @@
+<% content_for :header_tags do %>
+  <%= stylesheet_link_tag 'goals', plugin: 'dpi_cmi' %>
+<% end %>
+<div class="contextual">
+  <div id="tabs">
+    <ul>
+      <li><a href="#tabs-1">Filtros</a></li>
+    </ul>
+    <div id="tabs-1">
+      <%= form_tag goals_path, :method => 'get' do %>
+        <ul>
+          <li>
+            <%= check_box_tag 'opciones[]', 'sublevels', @show_sublevel -%>
+            <%= h "Mostrar Subniveles" -%>
+            <ul>
+              <li>
+                <%= check_box_tag 'opciones[]', 'allsublevels', @show_allsublevels -%>
+                <%= h "Mostrar todos los subniveles" -%>
+              </li>
+              <li>
+                <%= check_box_tag 'opciones[]', 'peso', @show_peso -%>
+                <%= h "Mostrar pesos de indicadores/objetivos" -%>
+              </li>
+            </ul>
+          </li>
+        </ul>
+        <%= hidden_field_tag "opciones[]", "calculo_actual" if @show_calculo_actual %>
+        <%unless @cmi_versions.empty? %>
+          <%= hidden_field_tag "version", @planned_version %>
+        <%end%>
+        <%= submit_tag "Aceptar"%>
+      <%end%>
+      <br/><br/>
+      <%= link_to "Exportar", goals_path(format: :png),:title=>"Exportar el cuadro como imagen", :target => "_blank" %>
+    </div>
+  </div>
+</div>
+<br/><br/>
+<h2><%= I18n.t 'cmi.title'%></h2>
+<p>
+<%unless @cmi_versions.empty? %>
+  <%= form_tag(goals_path(), :method=>:get) do %>
+    <%= content_tag(:label, "Seleccione version prevista: ") %>
+    <%= hidden_field_tag "opciones[]", "sublevels" if @show_sublevel %>
+    <%= hidden_field_tag "opciones[]", "allsublevels" if @show_allsublevels %>
+    <%= hidden_field_tag "opciones[]", "peso" if @show_peso %>
+    <%= hidden_field_tag "opciones[]", "calculo_actual" if @show_calculo_actual %>
+    <%= select_tag("version", content_tag(:option, '') +
+                 options_from_collection_for_select(@cmi_versions, :id, :name, @planned_version),
+                 {:onchange => "this.form.submit();", :include_blank => false})
+    %>
+  <% end %>
+<% end %>
+<%= form_tag(goals_path(), :method=>:get) do %>
+    <%= hidden_field_tag "opciones[]", "sublevels" if @show_sublevel %>
+    <%= hidden_field_tag "opciones[]", "allsublevels" if @show_allsublevels %>
+    <%= hidden_field_tag "opciones[]", "peso" if @show_peso %>
+    <%= hidden_field_tag "opciones[]", "calculo_actual" if !@show_calculo_actual %>
+    <%unless @cmi_versions.empty? %>
+      <%= hidden_field_tag "version", @planned_version %>
+    <%end%>
+      <%= submit_tag "Mostrar CMI Anual", class: "calculo-btn", disabled: !@show_calculo_actual %>
+      <%= submit_tag "Mostrar CMI a la Fecha", class: "calculo-btn", disabled: @show_calculo_actual %>
+    <%if @project.cmi_reports %>
+      <%= link_to "Generar Reporte", reporte_cmi_path(id: @project),
+                :title=>"Ver el reporte completo de CMI por perspectiva, objetivo e indicador con sus graficos", :class => 'icon icon-report',
+                :target => "_blank" %>
+    <%end%>
+  <% end %>
+ </p>
+
+
+  <% @goals.each_with_index do |goal_list, i| %>
+  <div id="accordion-perspectiva-<%=i%>">
+    <h3><%= @values[i] %> - <%= calculate_ratio(goal_list) %></h3>
+    <div>
+      <div class="perspective">
+        <div class="goals">
+          <% goal_list.each do |goal| %>
+            <div id="accordion-goal-<%=goal.id%>"  class="goal <%= indicator_class(goal) %>">
+             <h3> <%= link_to(goal.tracker.name.upcase+": "+goal.subject, issue_path(goal),target: "_blank") %></h3>
+              <%if User.current.roles_for_project(@project).include?(Role.find_by_name("PEI_Lider"))%>
+                <%= render_descendants_tree(goal,@goals_padres) if @show_sublevel && goal.renderizar_para_lider? %>
+              <%else%>
+                <%= render_descendants_tree(goal,@goals_padres) if @show_sublevel && goal.visible? %>
+              <%end%>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% end %>
+
+<script>
+  $(function() {
+    var icons = {
+      header: "ui-icon-circle-arrow-e",
+      activeHeader: "ui-icon-circle-arrow-s"
+    };
+    $( "#tabs" ).tabs({
+      active: false,
+      collapsible: true
+    });
+    <% @goals.each_with_index do |goal_list, i| %>
+      $( "#accordion-perspectiva-<%=i%>" ).accordion({ active: 0, collapsible: true });
+      <% goal_list.each do |goal| %>
+        $( "#accordion-goal-<%=goal.id%>" ).accordion({ active: false, collapsible: true });
+        //capture the click on the a tag
+         $(".goal h3 a").click(function() {
+            window.location = $(this).attr('href');
+            return false;
+         });
+      <% end %>
+    <%end%>
+  });
+</script>

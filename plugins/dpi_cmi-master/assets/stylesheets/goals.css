@@ -1,0 +1,155 @@
+#subniveles table, #subniveles th, #subniveles td {
+  border: 1px solid;
+  border-collapse: collapse;
+}
+#subniveles tr.issue a {
+  border: none !important;
+  background: none;
+}
+#subniveles tr.issue a :hover{
+  border: none !important;
+  background: none;
+}
+#subniveles tbody tr.issue td.goal  {
+  border: 1px solid;
+  border-collapse: collapse;
+  background: none;
+  text-align: left;
+  font-weight: bold;
+  color: black;
+}
+#subniveles tr.issue.green {
+  background-color: #468847;
+  border-color: #468847;
+  font-weight: none;
+}
+#subniveles tr.issue.green :hover, #subniveles tr.issue.green:hover td {
+  background-color: #5CB55E;
+  border-color: #5CB55E;
+  border: 2px solid;
+  font-weight: bold;
+}
+
+
+#subniveles tr.issue.yellow{
+  background-color: #B8B800;
+  border-color: #B8B800;
+  font-weight: none;
+}
+#subniveles tr.issue.yellow :hover, #subniveles tr.issue.yellow:hover td{
+  background-color: #C6C633;
+  border-color: #C6C633;
+  border: 2px solid;
+  font-weight: bold;
+}
+
+#subniveles tr.issue.orange{
+  background-color: #DE6E23;
+  border-color: #DE6E23;
+  font-weight: none;
+}
+#subniveles tr.issue.orange :hover, #subniveles tr.issue.orange:hover td{
+  background-color: #F77925;
+  border-color: #F77925;
+  border: 2px solid;
+  font-weight: bold;
+}
+
+#subniveles tr.issue.red{
+  background-color: #b94a48;
+  border-color: #b94a48;
+  font-weight: none;
+}
+#subniveles tr.issue.red :hover, #subniveles tr.issue.red:hover td{
+  background-color: #ED4542;
+  border-color: #ED4542;
+  border: 2px solid;
+  font-weight: bold;
+}
+
+
+#subniveles tr.issue{
+  background-color:#91959C;
+  font-weight: none;
+}
+#subniveles tr.issue :hover, #subniveles tr.issue:hover td{
+  background-color:#9FA4AB;
+  border: 2px solid;
+  font-weight: bold;
+}
+
+.goals a {
+  color: #FFF !important;
+  font-weight: bold;
+  background: none;
+}
+
+.contextual{
+  position: absolute;
+  right: 75px;
+  z-index: 999;
+}
+
+#tabs ul {list-style:none;}
+
+
+/* .goal h3:hover{border-color: #5CB55E; } */
+.goal.ui-accordion h3, .goal a {
+  background-color: #ccc;
+  border-color: #ccc;
+  color:#FFF;
+  background-image: none;
+}
+
+.goal.green h3:hover{border-color: #5CB55E; }
+.goal.green h3, .goal.green a {
+  background-color: #468847;
+  border-color: #468847;
+  color:#FFF;
+  background-image: none;
+}
+.goal.yellow h3:hover{border-color: #B8B800; }
+.goal.yellow h3, .goal.yellow a {
+  background-color: #C6C633;
+  border-color: #C6C633;
+  color:#FFF;
+  background-image: none;
+}
+.goal.orange h3:hover{border-color: #F77925; }
+.goal.orange h3, .goal.orange a {
+  background-color: #DE6E23;
+  border-color: #DE6E23;
+  color:#FFF;
+  background-image: none;
+}
+.goal.red h3:hover{border-color: #ED4542; }
+.goal.red h3, .goal.red a {
+  background-color: #b94a48;
+  border-color: #b94a48;
+  color:#FFF;
+  background-image: none;
+}
+
+.link {
+  font-weight: bold;
+  float: right;
+}
+
+.perspective h2{color:blue;}
+
+input[type="submit"].calculo-btn:disabled{
+  background-color: green;
+  cursor:not-allowed;
+}
+input[type="submit"].calculo-btn:disabled:hover{
+  background-color: green;
+  border-color: green;
+}
+input[type="submit"].calculo-btn{
+  background-color: #9FA4AB;
+}
+input[type="submit"].calculo-btn:hover{
+  background-color: #ED4542;
+  border-color: #ED4542;
+
+}

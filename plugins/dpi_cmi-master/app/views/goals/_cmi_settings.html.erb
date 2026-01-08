@@ -1,0 +1,52 @@
+
+<%= form_for(@project, url: save_cmi_settings_path(@project), :method => :put) do |f|%>
+	<%= error_messages_for 'project' %>
+	<% if !@project.versions.empty? %>
+		<p>
+			<strong><h4><%=l(:field_cmi_versions)%></h4></strong>
+			<%= f.select(:cmi_versions, options_from_collection_for_select(@project.versions, :id, :name, @project.cmi_versions), {}, { :multiple => true, :size => 5 })%>
+		</p>
+	<%end%>
+	<% if !@project.trackers.empty? %>
+		<p>
+			<strong><h4><%=l(:field_cmi_show_trackers)%></h4></strong>
+			<%= f.select(:cmi_show_trackers, options_from_collection_for_select(@project.trackers, :id, :name, @project.cmi_show_trackers),{}, { :multiple => true, :size => 5 }) %>
+		</p>
+	<%end%>
+	<%
+		validate_tracker=Tracker.find_by_name("Objetivo")
+		validate_tracker ? custom_fields=validate_tracker.custom_fields.where(:field_format=>"list").map{|cf| [cf.name, cf.id]} : custom_fields=[]
+		selected_cf = @project.perspectiva_cf
+		# selected_cf= validate_tracker.custom_fields.where(name: "Perspectiva").first.id if selected_cf.nil? || selected_cf.blank?
+	%>
+	<p>
+		<strong><h4><%=l(:field_perspectiva_cf)%></h4></strong>
+		<%= f.select(:perspectiva_cf, options_for_select(custom_fields,
+                 unless selected_cf.blank?
+                 Integer(selected_cf)
+                 end
+                 ), :include_blank=>false)%>
+	</p>
+	<p>
+		<%= f.check_box(:cmi_show_subprojects_tasks)%><strong style="color:black;"><%=l(:field_cmi_show_subprojects_tasks)%></strong>
+	</p>
+	<p>
+		<%= f.check_box(:cmi_validar_fecha_inicio_indicadores)%><strong style="color:black;"><%=l(:field_cmi_validar_fecha_inicio_indicadores)%></strong>
+	</p>
+	<p>
+		<%= f.check_box(:cmi_reports)%><strong style="color:black;"><%=l(:field_cmi_reports)%></strong>
+	</p>
+	<% if !@project.trackers.empty? %>
+		<p>
+			<strong><h4><%=l(:field_cmi_show_trackers_to_docx)%></h4></strong>
+			<%= f.select(:cmi_show_trackers_to_docx, options_from_collection_for_select(@project.trackers, :id, :name, @project.cmi_show_trackers_to_docx),{}, { :multiple => true, :size => 5 })%>
+		</p>
+	<%end%>
+	<% if !@project.trackers.empty? %>
+		<p>
+			<strong><h4><%=l(:field_cmi_trackers_con_peso)%></h4></strong>
+			<%= f.select(:cmi_trackers_con_peso, options_from_collection_for_select(@project.trackers, :id, :name, @project.cmi_trackers_con_peso),{}, { :multiple => true, :size => 5 })%>
+		</p>
+	<%end%>
+<%= submit_tag l(:button_save) %>
+<% end %>

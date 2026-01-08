@@ -1,0 +1,202 @@
+<h2><%= issue_heading(@issue) %></h2>
+
+<div class="<%= @issue.css_classes %> details">
+  <% if @prev_issue_id || @next_issue_id %>
+    <div class="next-prev-links contextual">
+      <%= link_to_if @prev_issue_id,
+                     "\xc2\xab #{l(:label_previous)}",
+                     (@prev_issue_id ? issue_path(@prev_issue_id) : nil),
+                     :title => "##{@prev_issue_id}" %> |
+      <% if @issue_position && @issue_count %>
+        <span class="position"><%= l(:label_item_position, :position => @issue_position, :count => @issue_count) %></span> |
+      <% end %>
+      <%= link_to_if @next_issue_id,
+                     "#{l(:label_next)} \xc2\xbb",
+                     (@next_issue_id ? issue_path(@next_issue_id) : nil),
+                     :title => "##{@next_issue_id}" %>
+    </div>
+  <% end %>
+
+<div class="subject">
+  <%= render_issue_subject_with_tree(@issue) %>
+</div>
+<p>
+  <%= authoring @issue.created_on, @issue.author %>. <%= l(:label_updated_time, time_tag(@issue.updated_on)).html_safe if @issue.created_on != @issue.updated_on%>.
+</p>
+
+<table class="attributes">
+<%= issue_fields_rows do |rows|
+  rows.left l(:field_status), h(@issue.status.name), :class => 'status'
+  rows.left l(:field_priority), h(@issue.priority.name), :class => 'priority'
+
+  unless @issue.disabled_core_fields.include?('assigned_to_id')
+    rows.left l(:field_assigned_to), avatar(@issue.assigned_to, :size => "14").to_s.html_safe + (@issue.assigned_to ? link_to_user(@issue.assigned_to) : "-"), :class => 'assigned-to'
+  end
+  unless @issue.disabled_core_fields.include?('category_id')
+    rows.left l(:field_category), h(@issue.category ? @issue.category.name : "-"), :class => 'category'
+  end
+  unless @issue.disabled_core_fields.include?('fixed_version_id')
+    rows.left l(:field_fixed_version), (@issue.fixed_version ? link_to_version(@issue.fixed_version) : "-"), :class => 'fixed-version'
+  end
+
+  unless @issue.disabled_core_fields.include?('start_date')
+    rows.right l(:field_start_date), format_date(@issue.start_date), :class => 'start-date'
+  end
+  unless @issue.disabled_core_fields.include?('due_date')
+    rows.right l(:field_due_date), format_date(@issue.due_date), :class => 'due-date'
+  end
+  unless @issue.disabled_core_fields.include?('done_ratio')
+    rows.right l(:field_done_ratio), progress_bar(@issue.done_ratio, :width => '80px', :legend => "#{@issue.done_ratio}%"), :class => 'progress'
+  end
+  unless @issue.disabled_core_fields.include?('estimated_hours')
+    unless @issue.estimated_hours.nil?
+      rows.right l(:field_estimated_hours), l_hours(@issue.estimated_hours), :class => 'estimated-hours'
+    end
+  end
+  if User.current.allowed_to?(:view_time_entries, @project)
+    rows.right l(:label_spent_time), (@issue.total_spent_hours > 0 ? link_to(l_hours(@issue.total_spent_hours), project_issue_time_entries_path(@project, @issue)) : "-"), :class => 'spent-time'
+  end
+end %>
+<%= render_custom_fields_rows(@issue) %>
+
+</table>
+<%if @issue.project.module_enabled?(:CMI) %>
+  <%if @issue.tracker == Tracker.find_by_name("Indicador")%>
+    <%if @issue.tipo_indicador=="de Resultado" %>
+      <% if @issue.valor == 1 %>
+        <p style="color:#468847;"><strong>Indicador alcanzado!</strong></p>
+      <%else%>
+        <p style="color:#b94a48;"><strong>Indicador no alcanzado aún!</strong></p>
+      <%end%>
+    <%else%>
+      <%valores_alcance={"Anual"=>1,"Semestral"=>2,"Cuatrimestral"=>3,"Trimestral"=>4,"Bimestral"=>6,"Mensual"=>12}%>
+      <p><strong>Propiedades Globales del Indicador</strong></p>
+      <table class="attributes">
+        <tbody>
+          <tr><th>Semáforo Mínimo:</th><td><%= @issue.ind_min %></td><th>Alcance:</th><td><%= valores_alcance.key(@issue.alcance) %></td></tr>
+          <tr><th>Semáforo Medio:</th><td><%= @issue.ind_med %></td><th>Tipo:</th><td><%= @issue.tipo_indicador %></td></tr>
+          <tr><th>Semáforo Máximo:</th><td><%= @issue.ind_max %></td><th>Valor:</th><td><%= @issue.valor %></td></tr>
+          <tr><th>CMI Peso:</th><td><%= @issue.valor_peso %></td><th></th><td></td></tr>
+        </tbody>
+      </table>
+      <%if @issue.alcance>1 %>
+        <hr />
+        <div class="splitcontent">
+        <%@issue.periodos.each do |semaforo|%>
+          <div class="<%=semaforo.periodo % 2 == 0 ? "splitcontentright" : "splitcontentleft"%> <%= @issue.periodo_actual== semaforo.periodo ? " periodo-actual" : ""%>">
+          <strong><p style="text-decoration:underline;">Semáforos de período <%=semaforo.periodo%> <%= @issue.periodo_actual== semaforo.periodo ? "(ACTUAL)" : ""%></p></strong>
+          <table class="attributes">
+            <tbody>
+              <tr><th>Semáforo Mínimo:</th><td><%= semaforo.ind_min %></td></tr>
+              <tr><th>Semáforo Medio:</th><td><%= semaforo.ind_med %></td></tr>
+              <tr><th>Semáforo Máximo:</th><td><%= semaforo.ind_max %></td></tr>
+            </tbody>
+          </table>
+          </div>
+        <%end%>
+        </div>
+      <%end%>
+    <%end%>
+  <%elsif @issue.valor_peso %>
+    <p><strong>CMI Peso:</strong> <%= @issue.valor_peso %></p>
+  <%end%>
+<%end%>
+
+<% if @issue.description? || @issue.attachments.any? -%>
+<hr />
+  <% if @issue.description? %>
+    <div class="description">
+      <p><strong><%=l(:field_description)%></strong></p>
+      <div class="wiki">
+      <%= @issue.description %>
+      </div>
+    </div>
+  <% end %>
+  <%if @issue.attachments.any? %>
+    <p><strong>Archivos: </strong>
+    <ul>
+    <% @issue.attachments.each do |attachment| %>
+      <li><%=h attachment.filename %></li>
+    <%end%>
+    </ul></p>
+  <%end%>
+<% end -%>
+
+
+<% if !@issue.leaf? || User.current.allowed_to?(:manage_subtasks, @project) %>
+<hr />
+<div id="issue_tree">
+  <p><strong><%=l(:label_subtask_plural)%></strong></p>
+  <%= render_descendants_tree_doc(@issue) unless @issue.leaf? %>
+</div>
+<% end %>
+
+<% if @relations.present? || User.current.allowed_to?(:manage_issue_relations, @project) %>
+<hr />
+<div id="relations">
+<p><strong><%=l(:label_related_issues)%></strong></p>
+<% if @relations.present? %>
+  <ul>
+  <% @relations.each do |relation| %>
+    <% other_issue = relation.other_issue(@issue) -%>
+    <li><%= l(relation.label_for(@issue)) %><%= h(other_issue.project) + ' - ' if Setting.cross_project_issue_relations? %> <%= link_to_issue_doc(other_issue, :truncate => 60) %> - <%=h other_issue.status.name %> <%= format_date(other_issue.start_date) %> - <%= format_date(other_issue.due_date) %></li>
+  <% end %>
+  </ul>
+<% end %>
+</div>
+<% end %>
+</div>
+
+<% if @changesets.present? %>
+<div id="issue-changesets">
+<h3><%=l(:label_associated_revisions)%></h3>
+    <ul>
+    <% changesets.each do |changeset| %>
+      <li><%= changeset.format_identifier %> - <%= authoring(changeset.committed_on, changeset.author) %> <%= changeset.comments %></li>
+    <% end %>
+    </ul>
+</div>
+<% end %>
+
+<% if @journals.present? %>
+<div id="history">
+<h3><%=l(:label_history)%></h3>
+  <% for journal in @journals %>
+    <div id="change-<%= journal.id %>" class="<%= journal.css_classes %>">
+      <div id="note-<%= journal.indice %>">
+      <h4><%= "##{journal.indice} #{format_time(journal.created_on)} - #{h(journal.user.name)}" %></h4>
+      <% if journal.details.any? %>
+      <ul>
+        <% details_to_strings(journal.visible_details).each do |string| %>
+         <li><%= string %></li>
+        <% end %>
+      </ul>
+      <% end %>
+      <%= render_notes(@issue, journal, :reply_links => "") unless journal.notes.blank? %>
+      </div>
+    </div>
+  <% end %>
+</div>
+<% end %>
+
+<% if @journals_others && @journals_others.present? %>
+<div id="history">
+<h3>HISTORICO INDICADORES Y TAREAS</h3>
+  <% for journal in @journals_others %>
+    <div id="change-<%= journal.id %>" class="<%= journal.css_classes %>">
+      <div id="note-<%= journal.indice %>">
+      <h4><%= "#{format_time(journal.created_on)} - #{h(journal.user.name)}" %></h4>
+      <%= "#{journal.issue.tracker.name} - ##{journal.issue.id} - #{journal.issue.subject}" %> 
+      <% if journal.details.any? %>
+      <ul>
+        <% details_to_strings(journal.visible_details).each do |string| %>
+         <li><%= string %></li>
+        <% end %>
+      </ul>
+      <% end %>
+      <%= render_notes(journal.issue, journal, :reply_links => "") unless journal.notes.blank? %>
+      </div>
+    </div>
+  <% end %>
+</div>
+<% end %>
