@@ -21,13 +21,15 @@ services:
       - db
 
   db:
-    image: mysql:5.7
+    image: mysql:8.0
     container_name: gp-mysql
+    command: --default-authentication-plugin=mysql_native_password
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: redmine_test
     volumes:
       - db_data:/var/lib/mysql
+      - ./redmine_test_20260107.sql:/docker-entrypoint-initdb.d/01_redmine_test.sql:ro
     ports:
       - "3307:3306"
 

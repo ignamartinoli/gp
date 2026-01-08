@@ -1,3 +1,0 @@
-= redmine_utn_mail_encuesta
-
-Description goes here

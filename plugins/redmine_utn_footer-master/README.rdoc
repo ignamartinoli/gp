@@ -1,3 +1,0 @@
-= redmine_utn_footer
-
-Description goes here
