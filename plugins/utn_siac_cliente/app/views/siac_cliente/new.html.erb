@@ -455,170 +455,111 @@
   </style>
 
   <script>
-      document.addEventListener("DOMContentLoaded", function () {
-          // --- Collapse sidebar ---
-          var column = document.querySelector(".dimensiones-column");
-          var panel = document.getElementById("dimensiones-panel");
-          var toggle = document.getElementById("dimensiones-collapse-toggle");
+    document.addEventListener("DOMContentLoaded", function () {
+      // --- Collapse sidebar ---
+      var column = document.querySelector(".dimensiones-column");
+      var panel = document.getElementById("dimensiones-panel");
+      var toggle = document.getElementById("dimensiones-collapse-toggle");
 
-          if (column && panel && toggle) {
-              function togglePanel() {
-                  var collapsed = column.classList.toggle("is-collapsed");
-                  panel.classList.toggle("is-hidden", collapsed);
+      if (column && panel && toggle) {
+        function togglePanel() {
+          var collapsed = column.classList.toggle("is-collapsed");
+          panel.classList.toggle("is-hidden", collapsed);
 
-                  toggle.setAttribute("aria-expanded", String(!collapsed));
-                  toggle.textContent = collapsed ? "»" : "«";
-              }
-              toggle.addEventListener("click", togglePanel);
-          }
+          toggle.setAttribute("aria-expanded", String(!collapsed));
+          toggle.textContent = collapsed ? "»" : "«";
+        }
+        toggle.addEventListener("click", togglePanel);
+      }
 
-          // --- Sidebar links: filter right panel by dimension ---
-          var links = Array.prototype.slice.call(
-              document.querySelectorAll('[data-dimension-link="true"]')
-          );
+      var links = Array.prototype.slice.call(
+        document.querySelectorAll('[data-dimension-link="true"]')
+      );
 
-          var sections = Array.prototype.slice.call(
-              document.querySelectorAll(".dimension-section")
-          );
+      var sections = Array.prototype.slice.call(
+        document.querySelectorAll(".dimension-section")
+      );
 
-          function setActiveLink(linkEl) {
-              links.forEach(function (l) { l.classList.remove("is-active"); });
-              if (linkEl) linkEl.classList.add("is-active");
-          }
+      function setActiveLink(linkEl) {
+        links.forEach(function (l) { l.classList.remove("is-active"); });
+        if (linkEl) linkEl.classList.add("is-active");
+      }
 
-          // --- Tabs de componentes dentro de una dimension ---
-          function bindComponentTabs(root) {
-              if (!root) return;
+      function bindComponentTabs(root) { /* ... tu código tal cual ... */ }
+      function getCurrentMode(root) { /* ... */ }
+      function setModeButtons(root, mode) { /* ... */ }
+      function applyModeToComponent(compEl, mode) { /* ... */ }
+      function bindModeTabs(root) { /* ... */ }
 
-              var tabs = Array.prototype.slice.call(root.querySelectorAll('[data-componente-tab="true"]'));
-              var blocks = Array.prototype.slice.call(root.querySelectorAll(".componente-section"));
+      function bindDimensionUI(dimEl) {
+        bindModeTabs(dimEl);
+        bindComponentTabs(dimEl);
+        var visibleComp = dimEl.querySelector(".componente-section.is-visible");
+        if (visibleComp) applyModeToComponent(visibleComp, getCurrentMode(dimEl));
+      }
 
-              if (!tabs.length || !blocks.length) return;
+      function patchPaginationLinks() {
+        var hash = window.location.hash;
+        if (!hash) return;
 
-              function activateTab(tabEl) {
-                  tabs.forEach(function (t) { t.classList.remove("is-active"); });
-                  tabEl.classList.add("is-active");
+        document.querySelectorAll(".pagination a[href]").forEach(function (a) {
+          a.href = a.href.split("#")[0] + hash; // reemplaza siempre por el hash actual
+        });
+      }
 
-                  var targetId = tabEl.getAttribute("data-target");
-                  blocks.forEach(function (b) {
-                      b.classList.toggle("is-visible", b.id === targetId);
-                  });
+      function showOnlySectionById(idWithoutHash) {
+        if (!idWithoutHash) return;
 
-                  // When component changes, ensure current mode is applied (info/auto)
-                  var visibleComp = root.querySelector(".componente-section.is-visible");
-                  if (visibleComp) applyModeToComponent(visibleComp, getCurrentMode(root));
-              }
+        sections.forEach(function (s) {
+          s.classList.toggle("is-visible", s.id === idWithoutHash);
+        });
 
-              tabs.forEach(function (t) {
-                  if (t.__boundClick) return;
-                  t.addEventListener("click", function () { activateTab(t); });
-                  t.__boundClick = true;
-              });
+        var visibleDim = document.getElementById(idWithoutHash);
+        if (visibleDim) bindDimensionUI(visibleDim);
 
-              var active = root.querySelector(".componente-tab.is-active") || tabs[0];
-              if (active) activateTab(active);
-          }
+        var newHash = "#" + idWithoutHash;
 
-          // --- Subtabs: INFORMACION / AUTOEVALUACION (per dimension) ---
-          function getCurrentMode(root) {
-              var active = root.querySelector('[data-campos-tab="true"].is-active');
-              return active ? active.getAttribute("data-mode") : "info";
-          }
+        if (history && history.replaceState) {
+          history.replaceState(null, "", newHash);
+        } else {
+          window.location.hash = newHash;
+        }
 
-          function setModeButtons(root, mode) {
-              var btns = Array.prototype.slice.call(root.querySelectorAll('[data-campos-tab="true"]'));
-              btns.forEach(function (b) {
-                  b.classList.toggle("is-active", b.getAttribute("data-mode") === mode);
-              });
-          }
+        patchPaginationLinks();
+      }
 
-          function applyModeToComponent(compEl, mode) {
-              var groups = Array.prototype.slice.call(compEl.querySelectorAll("[data-campos-group]"));
-              groups.forEach(function (g) {
-                  g.classList.toggle("is-visible", g.getAttribute("data-campos-group") === mode);
-              });
-          }
+      // Click behavior (dimensions)
+      links.forEach(function (link) {
+        link.addEventListener("click", function (e) {
+          e.preventDefault();
+          var targetId = link.getAttribute("data-target") || (link.getAttribute("href") || "").replace("#", "");
+          if (!targetId) return;
 
-          function bindModeTabs(root) {
-              if (!root) return;
-
-              var btns = Array.prototype.slice.call(root.querySelectorAll('[data-campos-tab="true"]'));
-              if (!btns.length) return;
-
-              btns.forEach(function (b) {
-                  if (b.__boundClick) return;
-                  b.addEventListener("click", function () {
-                      var mode = b.getAttribute("data-mode") || "info";
-                      setModeButtons(root, mode);
-
-                      // Apply to currently visible component in this dimension
-                      var visibleComp = root.querySelector(".componente-section.is-visible");
-                      if (visibleComp) applyModeToComponent(visibleComp, mode);
-                  });
-                  b.__boundClick = true;
-              });
-
-              // Ensure default mode is applied
-              var mode = getCurrentMode(root);
-              setModeButtons(root, mode);
-              var visibleComp = root.querySelector(".componente-section.is-visible");
-              if (visibleComp) applyModeToComponent(visibleComp, mode);
-          }
-
-          function bindDimensionUI(dimEl) {
-              bindModeTabs(dimEl);
-              bindComponentTabs(dimEl);
-              // After both binds, ensure mode is applied to visible component
-              var visibleComp = dimEl.querySelector(".componente-section.is-visible");
-              if (visibleComp) applyModeToComponent(visibleComp, getCurrentMode(dimEl));
-          }
-
-          function showOnlySectionById(idWithoutHash) {
-              if (!idWithoutHash) return;
-
-              sections.forEach(function (s) {
-                  s.classList.toggle("is-visible", s.id === idWithoutHash);
-              });
-
-              var visibleDim = document.getElementById(idWithoutHash);
-              if (visibleDim) bindDimensionUI(visibleDim);
-
-              var newHash = "#" + idWithoutHash;
-              if (history && history.replaceState) {
-                  history.replaceState(null, "", newHash);
-              } else {
-                  window.location.hash = newHash;
-              }
-          }
-
-          // Click behavior (dimensions)
-          links.forEach(function (link) {
-              link.addEventListener("click", function (e) {
-                  e.preventDefault();
-                  var targetId = link.getAttribute("data-target") || (link.getAttribute("href") || "").replace("#", "");
-                  if (!targetId) return;
-
-                  setActiveLink(link);
-                  showOnlySectionById(targetId);
-              });
-          });
-
-          // On load: if URL has hash -> show it, else show first
-          if (window.location.hash) {
-              var id = window.location.hash.replace("#", "");
-              var active = document.querySelector('[data-dimension-link="true"][data-target="' + id + '"]');
-              if (active) setActiveLink(active);
-              showOnlySectionById(id);
-          } else {
-              var first = document.querySelector(".dimension-section.is-visible") || sections[0];
-              if (first) {
-                  var firstLink = document.querySelector('[data-dimension-link="true"][data-target="' + first.id + '"]');
-                  if (firstLink) setActiveLink(firstLink);
-                  showOnlySectionById(first.id);
-              }
-          }
+          setActiveLink(link);
+          showOnlySectionById(targetId);
+        });
       });
+
+      // On load
+      if (window.location.hash) {
+        var id = window.location.hash.replace("#", "");
+        var active = document.querySelector('[data-dimension-link="true"][data-target="' + id + '"]');
+        if (active) setActiveLink(active);
+        showOnlySectionById(id);
+      } else {
+        var first = document.querySelector(".dimension-section.is-visible") || sections[0];
+        if (first) {
+          var firstLink = document.querySelector('[data-dimension-link="true"][data-target="' + first.id + '"]');
+          if (firstLink) setActiveLink(firstLink);
+          showOnlySectionById(first.id);
+        }
+      }
+
+      // Por si el paginador ya está renderizado antes del primer showOnlySectionById
+      patchPaginationLinks();
+    });
   </script>
+
 
   <script>
     function openDocenteDialog(id) {
