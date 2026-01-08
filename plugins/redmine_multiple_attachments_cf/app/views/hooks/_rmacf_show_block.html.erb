@@ -1,0 +1,26 @@
+<% issue = @issue || (defined?(context) ? context[:issue] : nil) %>
+<% if issue.present? %>
+  <% macf_values = issue.custom_field_values.select { |cv|
+       fmt = cv.custom_field.try(:format)
+       fmt && fmt.name == 'multiple_attachment'
+     } %>
+
+  <% macf_values.each do |cv| %>
+    <% ids = cv.value.to_s.split(',').reject(&:blank?) %>
+    <% next if ids.blank? %>
+    <% atts = Attachment.where(id: ids).index_by { |a| a.id.to_s } %>
+
+    <tr>
+      <th class="rmacf-title"><%= h cv.custom_field.name %></th>
+      <td class="rmacf-list">
+        <ul class="attachments">
+          <% ids.each do |aid| %>
+            <% if (a = atts[aid]) %>
+              <li><%= link_to_attachment(a, download: false) %></li>
+            <% end %>
+          <% end %>
+        </ul>
+      </td>
+    </tr>
+  <% end %>
+<% end %>

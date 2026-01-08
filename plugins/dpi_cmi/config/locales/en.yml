@@ -1,0 +1,19 @@
+# English strings go here for Rails i18n
+en:
+  date:
+    formats:
+      default: "%Y-%m-%d"
+      short: "%d de %b"
+      long: "%d de %B de %Y"
+  field_cmi_versions: "CMI planned versions"
+  field_cmi_show_trackers: "Show this trackers in sublevels"
+  field_perspectiva_cf: "Perspective Field in use"
+  cmi:
+    label_tab: "Goals"
+    title: "Balance Scorecard"
+    showindicators: "Show indicators"
+    hideindicators: "Hide indicators"
+    showsublevels: "Show sublevels"
+    hidesublevels: "Hide sublevels"
+    onlyonesublevel: "Just one"
+    allsublevels: "All"

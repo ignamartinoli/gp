@@ -1,0 +1,9 @@
+<% attachments = @issue.attachments.select { |a| a.description == 'custom_field:multiple_attachments' } %>
+<% if attachments.any? %>
+  <p><strong>Archivos asociados:</strong></p>
+  <ul>
+    <% attachments.each do |attachment| %>
+      <li><%= link_to attachment.filename, download_named_attachment_path(attachment, attachment.filename) %></li>
+    <% end %>
+  </ul>
+<% end %>

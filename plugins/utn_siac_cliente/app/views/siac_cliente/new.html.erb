@@ -1,0 +1,1006 @@
+<%# app/views/convocatoria/preview.html.erb %>
+
+<%# Precompute componentes of this convocatoria grouped by dimension to keep the view fast and clean %>
+<%
+  componentes_de_convocatoria = @convocatoria.componentes.includes(:campos, :dimension)
+  componentes_por_dimension = componentes_de_convocatoria.group_by(&:dimension_id)
+%>
+
+<div class="convocatoria-layout">
+  <!-- COLUMNA IZQUIERDA: PANEL DE DIMENSIONES -->
+  <div class="dimensiones-column">
+    <!-- Icono de colapso abajo a la derecha -->
+    <button
+      id="dimensiones-collapse-toggle"
+      class="dimensiones-collapse-toggle"
+      type="button"
+      aria-label="Ocultar/mostrar panel de dimensiones"
+      aria-expanded="true"
+    >
+      «
+    </button>
+
+    <div id="dimensiones-panel" class="div_section dimensiones-panel">
+      <div class="dimensiones-header">
+        <span class="dimensiones-title">Dimensiones</span>
+      </div>
+
+      <% if @dimensiones.present? %>
+        <nav class="dimensiones-nav">
+          <ul class="dimensiones-list">
+            <% @dimensiones.each_with_index do |dimension, i| %>
+              <li class="dimensiones-item">
+                <a
+                  href="#dimension-<%= dimension.id %>"
+                  class="dimensiones-link <%= 'is-active' if i == 0 %>"
+                  data-dimension-link="true"
+                  data-target="dimension-<%= dimension.id %>"
+                >
+                  <span class="dimensiones-index"><%= i + 1 %>.</span>
+                  <span class="dimensiones-name"><%= dimension.dimension %></span>
+                </a>
+              </li>
+            <% end %>
+          </ul>
+        </nav>
+      <% else %>
+        <p class="dimensiones-empty">No hay dimensiones asociadas.</p>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- COLUMNA DERECHA: DETALLE DE CONVOCATORIA + DIMENSIONES -->
+  <div class="convocatoria-column">
+    <div class="div_section">
+      <hr>
+
+      <h1><%= @convocatoria.nombre %></h1>
+
+      <% if @dimensiones.present? %>
+        <% @dimensiones.each_with_index do |dimension, idx| %>
+          <% componentes = (componentes_por_dimension[dimension.id] || []) %>
+
+          <section
+            class="dimension-section <%= 'is-visible' if idx == 0 %>"
+            id="dimension-<%= dimension.id %>"
+          >
+            <% if componentes.any? %>
+
+              <!-- ================= Row 1: COMPONENTES ================= -->
+              <div class="componentes-tabs" role="tablist" aria-label="Componentes">
+                <% componentes.each_with_index do |componente, c_idx| %>
+                  <button
+                    type="button"
+                    class="componente-tab <%= 'is-active' if c_idx == 0 %>"
+                    data-componente-tab="true"
+                    data-target="componente-<%= componente.id %>"
+                  >
+                    <%= componente.nombre %>
+                  </button>
+                <% end %>
+              </div>
+
+              <!-- ================= Row 2: INFORMACION / AUTOEVALUACION ================= -->
+              <div class="subtabs" role="tablist" aria-label="Tipo de campos">
+                <button
+                  type="button"
+                  class="subtab is-active"
+                  data-campos-tab="true"
+                  data-mode="info"
+                >
+                  INFORMACIÓN
+                </button>
+
+                <button
+                  type="button"
+                  class="subtab"
+                  data-campos-tab="true"
+                  data-mode="auto"
+                >
+                  AUTOEVALUACIÓN
+                </button>
+              </div>
+
+              <!-- ================= Content: each componente has 2 groups ================= -->
+              <div class="componentes-content">
+                <% componentes.each_with_index do |componente, c_idx| %>
+                  <div
+                    class="componente-section <%= 'is-visible' if c_idx == 0 %>"
+                    id="componente-<%= componente.id %>"
+                  >
+                    <% campos_info = componente.campos.select { |c| c.autoevaluacion.to_i == 0 } %>
+                    <% campos_auto = componente.campos.select { |c| c.autoevaluacion.to_i == 1 } %>
+
+                    <div class="campos-group is-visible" data-campos-group="info">
+                      <% if campos_info.any? %>
+                        <div class="campos-list">
+                          <% campos_info.each_with_index do |campo, index| %>
+                            <%= generar_campo(campo, index + 1) %>
+                          <% end %>
+                        </div>
+                      <% else %>
+                        <div class="campos-empty"><em>(Sin campos de información)</em></div>
+                      <% end %>
+                    </div>
+
+                    <div class="campos-group" data-campos-group="auto">
+                      <% if campos_auto.any? %>
+                        <div class="campos-list">
+                          <% campos_auto.each_with_index do |campo, index| %>
+                            <%= generar_campo(campo, index + 1) %>
+                          <% end %>
+                        </div>
+                      <% else %>
+                        <div class="campos-empty"><em>(Sin campos de autoevaluación)</em></div>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+
+            <% else %>
+              <p><em>No hay componentes asociados a esta dimensión para esta convocatoria.</em></p>
+            <% end %>
+          </section>
+
+        <% end %>
+      <% else %>
+        <p>No hay dimensiones asociadas.</p>
+      <% end %>
+
+      <div class="submit-container">
+        <%= link_to "Volver a las convocatorias", convocatorias_path, class: "siac_button" %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% content_for :header_tags do %>
+  <%= stylesheet_link_tag 'siac.css', plugin: :utn_siac %>
+
+  <!-- 🔴 ESTO ES LO QUE FALTABA -->
+  <%= javascript_include_tag 'jquery-ui/widgets/dialog' %>
+  <%= stylesheet_link_tag 'jquery-ui/themes/base/dialog' %>
+
+  <!-- mismos JS que en la preview -->
+  <%= javascript_include_tag 'componentes', plugin: :utn_siac %>
+  <%= javascript_include_tag 'stepper_plantel_docente', plugin: :utn_siac %>
+
+
+  <style>
+      /* ------------------ Layout general ------------------ */
+
+      #content {
+          padding: 0;
+          margin-top: 0;
+      }
+
+      .convocatoria-layout {
+          display: flex;
+          align-items: stretch;
+          gap: 1.5rem;
+      }
+
+      .convocatoria-column {
+          flex: 1 1 auto;
+          min-width: 0;
+      }
+
+      /* ------------------ Sidebar de dimensiones ------------------ */
+
+      .dimensiones-column {
+          position: relative;
+          flex: 0 0 260px;
+          max-width: 260px;
+          background: #1f2840;
+          color: #e5ebff;
+          display: flex;
+          min-height: 100vh;
+      }
+
+      .dimensiones-panel.div_section {
+          background: transparent;
+          border: none;
+          box-shadow: none;
+      }
+
+      .dimensiones-panel {
+          padding: 1.4rem 1.2rem 2.6rem;
+          width: 100%;
+      }
+
+      .dimensiones-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          font-size: 1.05rem;
+          font-weight: 600;
+          margin-bottom: 0.85rem;
+      }
+
+      .dimensiones-title {
+          letter-spacing: 0.02em;
+      }
+
+      .dimensiones-nav {
+          margin-top: 0.5rem;
+      }
+
+      .dimensiones-list {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+      }
+
+      .dimensiones-item + .dimensiones-item {
+          margin-top: 0.3rem;
+      }
+
+      .dimensiones-link,
+      .dimensiones-link .dimensiones-name,
+      .dimensiones-link .dimensiones-index {
+          color: #ffffff !important;
+          font-weight: 600;
+          font-size: 1rem;
+          text-decoration: none;
+          display: flex;
+          align-items: baseline;
+          gap: 0.35rem;
+          padding: 0.45rem 0.55rem;
+          border-radius: 8px;
+      }
+
+      .dimensiones-link:hover {
+          background: rgba(255, 255, 255, 0.10);
+          color: #ffffff !important;
+      }
+
+      .dimensiones-link.is-active {
+          background: #0d7fe6;
+          color: #ffffff !important;
+      }
+
+      .dimensiones-name {
+          flex: 1;
+          line-height: 1.3;
+      }
+
+      .dimensiones-empty {
+          font-size: 0.9rem;
+          color: #c3cbe6;
+      }
+
+      /* ------------------ Botón de colapso ------------------ */
+
+      .dimensiones-collapse-toggle {
+          position: absolute;
+          right: 0;
+          width: 40px;
+          height: 40px;
+          border: none;
+          background: #1f2840;
+          color: #ffffff;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 6px 0 0 0;
+          box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
+          font-size: 22px;
+          padding: 0;
+          z-index: 2;
+      }
+
+      .dimensiones-collapse-toggle:hover {
+          background: #27335a;
+      }
+
+      /* ------------------ Estado colapsado ------------------ */
+
+      .dimensiones-column.is-collapsed {
+          max-width: 40px;
+          flex-basis: 40px;
+      }
+
+      .dimensiones-panel.is-hidden {
+          opacity: 0;
+          pointer-events: none;
+      }
+
+      /* ------------------ Detalles dimensiones (derecha) ------------------ */
+
+      .dimension-section {
+          scroll-margin-top: 16px; /* para que no quede pegado arriba */
+      }
+
+      .dimension-title {
+          margin-top: 0.75rem;
+          margin-bottom: 0.5rem;
+      }
+
+      .componentes-list,
+      .campos-list {
+          margin: 0.4rem 0 0.6rem 1.2rem;
+      }
+
+      .componente-item {
+          margin: 0.35rem 0;
+      }
+
+      .campos-empty {
+          margin-left: 1.2rem;
+          margin-top: 0.25rem;
+      }
+
+      .campo-item {
+          margin: 0.5rem 0;
+          padding: 0.5rem 0.75rem;
+          border-left: 3px solid #0d7fe6;
+          background: rgba(13, 127, 230, 0.04);
+          border-radius: 8px;
+      }
+
+      .campo-pregunta {
+          margin-bottom: 0.25rem;
+      }
+
+      .campo-descripcion {
+          font-size: 0.95rem;
+          color: #2f3a4a;
+          margin-bottom: 0.35rem;
+      }
+
+      .campo-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.35rem;
+      }
+
+      .badge {
+          font-size: 0.75rem;
+          padding: 0.15rem 0.45rem;
+          border-radius: 999px;
+          background: #eef2ff;
+          color: #27335a;
+      }
+
+      .badge-required {
+          background: #ffe8e8;
+          color: #8a1f1f;
+      }
+
+      .badge-inactive {
+          background: #f1f1f1;
+          color: #666;
+      }
+
+      /* ------------------ Responsive ------------------ */
+
+      @media (max-width: 900px) {
+          .convocatoria-layout {
+              flex-direction: column;
+          }
+
+          .dimensiones-column {
+              flex: none;
+              max-width: none;
+              width: 100%;
+              min-height: auto;
+          }
+      }
+
+      /* ================== NEW: mostrar sólo la dimensión seleccionada ================== */
+      .dimension-section { display: none; }
+      .dimension-section.is-visible { display: block; }
+
+      /* ================== NEW: tabs horizontales de componentes ================== */
+      .componentes-tabs {
+          display: flex;
+          gap: 0.6rem;
+          flex-wrap: nowrap;
+          overflow-x: auto;
+          padding: 0.35rem 0.2rem 0.6rem;
+          margin: 0.35rem 0 0.35rem;
+      }
+
+      .componente-tab {
+          border: none;
+          cursor: pointer;
+          padding: 0.55rem 0.95rem;
+          border-radius: 8px;
+          background: #6f7f90;
+          color: #fff;
+          font-weight: 600;
+          white-space: nowrap;
+          flex: 0 0 auto;
+      }
+
+      .componente-tab:hover { filter: brightness(1.05); }
+      .componente-tab.is-active { background: #2f4256; }
+
+      .componentes-content { margin-top: 0.25rem; }
+      .componente-section { display: none; }
+      .componente-section.is-visible { display: block; }
+
+      /* ================== NEW: INFORMACION / AUTOEVALUACION row ================== */
+      .subtabs {
+          display: flex;
+          gap: 0.6rem;
+          flex-wrap: nowrap;
+          overflow-x: auto;
+          padding: 0.15rem 0.2rem 0.6rem;
+          margin: 0 0 0.75rem;
+      }
+
+      .subtab {
+          border: none;
+          cursor: pointer;
+          padding: 0.55rem 1.05rem;
+          border-radius: 8px;
+          background: #c9c9c9;
+          color: #ffffff;
+          font-weight: 700;
+          letter-spacing: 0.03em;
+          white-space: nowrap;
+          flex: 0 0 auto;
+          text-transform: uppercase;
+      }
+
+      .subtab.is-active {
+          background: #2f4256;
+      }
+
+      .campos-group { display: none; }
+      .campos-group.is-visible { display: block; }
+  </style>
+
+  <script>
+      document.addEventListener("DOMContentLoaded", function () {
+          // --- Collapse sidebar ---
+          var column = document.querySelector(".dimensiones-column");
+          var panel = document.getElementById("dimensiones-panel");
+          var toggle = document.getElementById("dimensiones-collapse-toggle");
+
+          if (column && panel && toggle) {
+              function togglePanel() {
+                  var collapsed = column.classList.toggle("is-collapsed");
+                  panel.classList.toggle("is-hidden", collapsed);
+
+                  toggle.setAttribute("aria-expanded", String(!collapsed));
+                  toggle.textContent = collapsed ? "»" : "«";
+              }
+              toggle.addEventListener("click", togglePanel);
+          }
+
+          // --- Sidebar links: filter right panel by dimension ---
+          var links = Array.prototype.slice.call(
+              document.querySelectorAll('[data-dimension-link="true"]')
+          );
+
+          var sections = Array.prototype.slice.call(
+              document.querySelectorAll(".dimension-section")
+          );
+
+          function setActiveLink(linkEl) {
+              links.forEach(function (l) { l.classList.remove("is-active"); });
+              if (linkEl) linkEl.classList.add("is-active");
+          }
+
+          // --- Tabs de componentes dentro de una dimension ---
+          function bindComponentTabs(root) {
+              if (!root) return;
+
+              var tabs = Array.prototype.slice.call(root.querySelectorAll('[data-componente-tab="true"]'));
+              var blocks = Array.prototype.slice.call(root.querySelectorAll(".componente-section"));
+
+              if (!tabs.length || !blocks.length) return;
+
+              function activateTab(tabEl) {
+                  tabs.forEach(function (t) { t.classList.remove("is-active"); });
+                  tabEl.classList.add("is-active");
+
+                  var targetId = tabEl.getAttribute("data-target");
+                  blocks.forEach(function (b) {
+                      b.classList.toggle("is-visible", b.id === targetId);
+                  });
+
+                  // When component changes, ensure current mode is applied (info/auto)
+                  var visibleComp = root.querySelector(".componente-section.is-visible");
+                  if (visibleComp) applyModeToComponent(visibleComp, getCurrentMode(root));
+              }
+
+              tabs.forEach(function (t) {
+                  if (t.__boundClick) return;
+                  t.addEventListener("click", function () { activateTab(t); });
+                  t.__boundClick = true;
+              });
+
+              var active = root.querySelector(".componente-tab.is-active") || tabs[0];
+              if (active) activateTab(active);
+          }
+
+          // --- Subtabs: INFORMACION / AUTOEVALUACION (per dimension) ---
+          function getCurrentMode(root) {
+              var active = root.querySelector('[data-campos-tab="true"].is-active');
+              return active ? active.getAttribute("data-mode") : "info";
+          }
+
+          function setModeButtons(root, mode) {
+              var btns = Array.prototype.slice.call(root.querySelectorAll('[data-campos-tab="true"]'));
+              btns.forEach(function (b) {
+                  b.classList.toggle("is-active", b.getAttribute("data-mode") === mode);
+              });
+          }
+
+          function applyModeToComponent(compEl, mode) {
+              var groups = Array.prototype.slice.call(compEl.querySelectorAll("[data-campos-group]"));
+              groups.forEach(function (g) {
+                  g.classList.toggle("is-visible", g.getAttribute("data-campos-group") === mode);
+              });
+          }
+
+          function bindModeTabs(root) {
+              if (!root) return;
+
+              var btns = Array.prototype.slice.call(root.querySelectorAll('[data-campos-tab="true"]'));
+              if (!btns.length) return;
+
+              btns.forEach(function (b) {
+                  if (b.__boundClick) return;
+                  b.addEventListener("click", function () {
+                      var mode = b.getAttribute("data-mode") || "info";
+                      setModeButtons(root, mode);
+
+                      // Apply to currently visible component in this dimension
+                      var visibleComp = root.querySelector(".componente-section.is-visible");
+                      if (visibleComp) applyModeToComponent(visibleComp, mode);
+                  });
+                  b.__boundClick = true;
+              });
+
+              // Ensure default mode is applied
+              var mode = getCurrentMode(root);
+              setModeButtons(root, mode);
+              var visibleComp = root.querySelector(".componente-section.is-visible");
+              if (visibleComp) applyModeToComponent(visibleComp, mode);
+          }
+
+          function bindDimensionUI(dimEl) {
+              bindModeTabs(dimEl);
+              bindComponentTabs(dimEl);
+              // After both binds, ensure mode is applied to visible component
+              var visibleComp = dimEl.querySelector(".componente-section.is-visible");
+              if (visibleComp) applyModeToComponent(visibleComp, getCurrentMode(dimEl));
+          }
+
+          function showOnlySectionById(idWithoutHash) {
+              if (!idWithoutHash) return;
+
+              sections.forEach(function (s) {
+                  s.classList.toggle("is-visible", s.id === idWithoutHash);
+              });
+
+              var visibleDim = document.getElementById(idWithoutHash);
+              if (visibleDim) bindDimensionUI(visibleDim);
+
+              var newHash = "#" + idWithoutHash;
+              if (history && history.replaceState) {
+                  history.replaceState(null, "", newHash);
+              } else {
+                  window.location.hash = newHash;
+              }
+          }
+
+          // Click behavior (dimensions)
+          links.forEach(function (link) {
+              link.addEventListener("click", function (e) {
+                  e.preventDefault();
+                  var targetId = link.getAttribute("data-target") || (link.getAttribute("href") || "").replace("#", "");
+                  if (!targetId) return;
+
+                  setActiveLink(link);
+                  showOnlySectionById(targetId);
+              });
+          });
+
+          // On load: if URL has hash -> show it, else show first
+          if (window.location.hash) {
+              var id = window.location.hash.replace("#", "");
+              var active = document.querySelector('[data-dimension-link="true"][data-target="' + id + '"]');
+              if (active) setActiveLink(active);
+              showOnlySectionById(id);
+          } else {
+              var first = document.querySelector(".dimension-section.is-visible") || sections[0];
+              if (first) {
+                  var firstLink = document.querySelector('[data-dimension-link="true"][data-target="' + first.id + '"]');
+                  if (firstLink) setActiveLink(firstLink);
+                  showOnlySectionById(first.id);
+              }
+          }
+      });
+  </script>
+
+  <script>
+    function openDocenteDialog(id) {
+        $('#' + id).dialog({
+          modal: true,
+          width: '70%',
+          draggable: true,
+          resizable: false,
+          closeText: 'Cerrar'
+        });
+      }
+
+      document.addEventListener('change', function (e) {
+        if (!e.target.classList.contains('tipo-encuadre-select')) return;
+
+        const proyecto = e.target.closest('.proyecto-investigacion');
+        if (!proyecto) return;
+
+        const selectDestino = proyecto.querySelector('.grupo-centro-select');
+        if (!selectDestino) return;
+
+        const wrapper = document.getElementById('investigacion-step');
+        if (!wrapper) return;
+
+        const tipo = e.target.value;
+
+        const grupos  = JSON.parse(wrapper.dataset.grupos  || '[]');
+        const centros = JSON.parse(wrapper.dataset.centros || '[]');
+
+        // limpiar
+        selectDestino.innerHTML = '<option value="">Seleccione grupo o centro</option>';
+
+        let data = [];
+        let idKey = '';
+
+        if (tipo === 'grupo') {
+          data = grupos;
+          idKey = 'id_grupo';
+        } else if (tipo === 'centro') {
+          data = centros;
+          idKey = 'id_centro';
+        } else {
+          return;
+        }
+
+        data.forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = item[idKey];
+          opt.textContent = item.denominacion;
+          selectDestino.appendChild(opt);
+        });
+      });
+
+      document.addEventListener("DOMContentLoaded", function () {
+          // --- Collapse sidebar ---
+          var column = document.querySelector(".dimensiones-column");
+          var panel = document.getElementById("dimensiones-panel");
+          var toggle = document.getElementById("dimensiones-collapse-toggle");
+
+          if (column && panel && toggle) {
+              function togglePanel() {
+                  var collapsed = column.classList.toggle("is-collapsed");
+                  panel.classList.toggle("is-hidden", collapsed);
+
+                  toggle.setAttribute("aria-expanded", String(!collapsed));
+                  toggle.textContent = collapsed ? "»" : "«";
+              }
+
+              toggle.addEventListener("click", togglePanel);
+          }
+
+          // --- Sidebar links: smooth scroll + active class + update hash ---
+          var links = Array.prototype.slice.call(
+              document.querySelectorAll('[data-dimension-link="true"]')
+          );
+
+          function setActiveLinkByHash(hash) {
+              if (!hash) return;
+              links.forEach(function (l) {
+                  l.classList.remove("is-active");
+              });
+              var active = document.querySelector('[data-dimension-link="true"][href="' + hash + '"]');
+              if (active) active.classList.add("is-active");
+          }
+
+          function scrollToHash(hash) {
+              if (!hash) return;
+              var target = document.querySelector(hash);
+              if (target) target.scrollIntoView({behavior: "smooth", block: "start"});
+          }
+
+          // Click behavior
+          links.forEach(function (link) {
+              link.addEventListener("click", function (e) {
+                  e.preventDefault();
+
+                  var targetHash = link.getAttribute("href");
+                  setActiveLinkByHash(targetHash);
+                  scrollToHash(targetHash);
+
+                  // Update URL hash without jump
+                  if (history && history.replaceState) {
+                      history.replaceState(null, "", targetHash);
+                  } else {
+                      window.location.hash = targetHash;
+                  }
+              });
+          });
+
+          // On load: if URL already has a hash, activate it and scroll to it
+          if (window.location.hash) {
+              setActiveLinkByHash(window.location.hash);
+              // Small timeout so layout is fully painted before scrolling
+              setTimeout(function () {
+                  scrollToHash(window.location.hash);
+              }, 50);
+          }
+
+          // Optional: highlight active link based on scroll position (IntersectionObserver)
+          var sections = Array.prototype.slice.call(document.querySelectorAll(".dimension-section"));
+          if ("IntersectionObserver" in window && sections.length) {
+              var observer = new IntersectionObserver(
+                  function (entries) {
+                      // Pick the most visible section
+                      var visible = entries
+                          .filter(function (e) {
+                              return e.isIntersecting;
+                          })
+                          .sort(function (a, b) {
+                              return b.intersectionRatio - a.intersectionRatio;
+                          })[0];
+
+                      if (visible && visible.target && visible.target.id) {
+                          setActiveLinkByHash("#" + visible.target.id);
+                          if (history && history.replaceState) {
+                              history.replaceState(null, "", "#" + visible.target.id);
+                          }
+                      }
+                  },
+                  {root: null, threshold: [0.2, 0.35, 0.5, 0.75]}
+              );
+
+              sections.forEach(function (s) {
+                  observer.observe(s);
+              });
+          }
+      });
+
+
+      document.addEventListener('click', function (e) {
+        if (!e.target.matches('.siac_button_secondary')) return;
+
+        const cuitInput = document.querySelector('input[name="empresa[cuit]"]');
+        const label = document.getElementById('empresa_nombre');
+
+        if (!cuitInput || !label) return;
+
+        const cuit = cuitInput.value.trim();
+
+        if (!/^\d{11}$/.test(cuit)) {
+          label.textContent = 'CUIT inválido';
+          return;
+        }
+
+        label.textContent = 'Buscando empresa…';
+
+        fetch('/siac_cliente/buscar_empresa_nosis', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+          },
+          body: JSON.stringify({ cuit: cuit })
+        })
+          .then(r => r.json())
+          .then(data => {
+            if (data.razon_social) {
+              label.textContent = data.razon_social;
+            } else {
+              label.textContent = 'Empresa no encontrada';
+            }
+          })
+          .catch(() => {
+            label.textContent = 'Error al consultar empresa';
+          });
+      });
+
+
+      document.addEventListener('click', function (e) {
+        if (!e.target.matches('button.btn.btn-primary')) return;
+
+        const cuitInput = document.querySelector('input[name="docente[cuit]"]');
+        const msg = document.getElementById('docente-no-encontrado');
+
+        if (!cuitInput || !msg) return;
+
+        const cuit = cuitInput.value.trim();
+
+        // 🔴 CUIT inválido
+        if (!/^\d{11}$/.test(cuit)) {
+          msg.textContent = 'CUIT inválido. Debe tener 11 números.';
+          msg.classList.remove('alert-success');
+          msg.classList.add('alert-danger');
+          msg.style.display = 'flex';
+          return;
+        }
+
+        fetch('/siac_docentes/buscar_por_cuit?cuit=' + cuit, {
+          headers: { 'Accept': 'application/json' }
+        })
+          .then(response => response.json())
+          .then(data => {
+            if (!data.found) {
+              // 🔴 Docente no encontrado
+              msg.textContent = 'Docente no encontrado';
+              msg.classList.remove('alert-success');
+              msg.classList.add('alert-danger');
+              msg.style.display = 'flex';
+              return;
+            }
+
+            // 🟢 Docente encontrado
+            msg.textContent = 'Docente encontrado';
+            msg.classList.remove('alert-danger');
+            msg.classList.add('alert-success');
+            msg.style.display = 'flex';
+
+            document.querySelector('input[name="docente[nombre]"]').value   = data.nombre;
+            document.querySelector('input[name="docente[apellido]"]').value = data.apellido;
+          });
+      });
+
+
+      document.addEventListener('input', function (e) {
+        if (e.target.name === 'docente[cuit]') {
+          const msg = document.getElementById('docente-no-encontrado');
+          if (msg) msg.style.display = 'none';
+        }
+      });
+
+
+      document.addEventListener("DOMContentLoaded", function () {
+
+        function getInvestigacionData() {
+          const step = document.getElementById('investigacion-step');
+          if (!step) return null;
+
+          return {
+            step: step,
+            grupos: JSON.parse(step.dataset.grupos || '[]'),
+            centros: JSON.parse(step.dataset.centros || '[]'),
+            container: step.querySelector('.proyectos-container')
+          };
+        }
+
+        function llenarSelect(select, items) {
+          select.innerHTML = '<option value="">Seleccione grupo o centro</option>';
+
+          items.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.id_grupo || item.id_centro || item.id;
+            opt.textContent = item.denominacion || item.nombre;
+            select.appendChild(opt);
+          });
+        }
+
+        // ===============================
+        // CAMBIO TIPO ENCUADRE (CLAVE)
+        // ===============================
+        document.addEventListener('change', function (e) {
+          if (!e.target.matches('.tipo-encuadre-select')) return;
+
+          const data = getInvestigacionData();
+          if (!data) return;
+
+          const proyecto = e.target.closest('.proyecto-investigacion');
+          if (!proyecto) return;
+
+          const refSelect = proyecto.querySelector('.grupo-centro-select');
+          if (!refSelect) return;
+
+          if (e.target.value === 'grupo') {
+            llenarSelect(refSelect, data.grupos);
+          } else if (e.target.value === 'centro') {
+            llenarSelect(refSelect, data.centros);
+          } else {
+            refSelect.innerHTML = '<option value="">Seleccione grupo o centro</option>';
+          }
+        });
+
+        // ===============================
+        // AGREGAR PROYECTO
+        // ===============================
+        document.addEventListener('click', function (e) {
+          if (!e.target.matches('#agregar-proyecto-investigacion')) return;
+
+          const data = getInvestigacionData();
+          if (!data) return;
+
+          const proyectos = data.container.querySelectorAll('.proyecto-investigacion');
+          const newIndex = proyectos.length;
+
+          const template = proyectos[0].cloneNode(true);
+
+          template.querySelectorAll('input, select').forEach(el => {
+            el.value = '';
+            if (el.name) {
+              el.name = el.name.replace(/\[\d+\]/, `[${newIndex}]`);
+            }
+          });
+
+          template.dataset.index = newIndex;
+          data.container.appendChild(template);
+        });
+
+      });
+
+
+      function validateStep(stepName) {
+        const fields = document.querySelectorAll('[data-step="' + stepName + '"]');
+        let errors = {};
+
+        fields.forEach(el => {
+          const value = (el.value || '').trim();
+          const required = el.dataset.required === 'true';
+          const path = el.dataset.path;
+
+          clearFieldError(el);
+
+          if (required && !value) {
+            addError(el, 'Este campo es obligatorio');
+            errors[path] = ['obligatorio'];
+            return;
+          }
+
+          if (el.dataset.type === 'cuit' && value && !/^\d{11}$/.test(value)) {
+            addError(el, 'CUIT inválido');
+            errors[path] = ['cuit inválido'];
+          }
+
+          if (el.dataset.type === 'number' && value && Number(value) <= 0) {
+            addError(el, 'Debe ser mayor a 0');
+            errors[path] = ['valor inválido'];
+          }
+        });
+
+        return errors;
+      }
+
+      function addError(el, msg) {
+        el.classList.add('is-invalid');
+
+        let fb = el.nextElementSibling;
+        if (!fb || !fb.classList.contains('invalid-feedback')) {
+          fb = document.createElement('div');
+          fb.className = 'invalid-feedback';
+          el.after(fb);
+        }
+        fb.textContent = msg;
+      }
+
+      function clearFieldError(el) {
+        el.classList.remove('is-invalid');
+        const fb = el.nextElementSibling;
+        if (fb && fb.classList.contains('invalid-feedback')) fb.remove();
+      }
+
+      document.querySelector('.step-btn.next').addEventListener('click', function () {
+        const active = document.querySelector('.step-content.active');
+        const stepName = active.dataset.step;
+
+        const errors = validateStep(stepName);
+        if (Object.keys(errors).length > 0) {
+          active.querySelector('.is-invalid').scrollIntoView({behavior: 'smooth'});
+          return;
+        }
+
+        avanzarStep();
+      });
+
+
+  </script>
+<% end %>
+
+

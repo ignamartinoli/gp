@@ -1,0 +1,15 @@
+<tbody id="sedes-container">
+  <% sedes.each do |sede| %>
+    <tr>
+      <td>
+        <div class="checkboxConvContainerSedes">
+          <input type="checkbox" class="checkbox rowCheckboxesSedes" id="check<%= sede.id %>" name="sedes_codigos[]" value="<%= sede.id %>">
+          Seleccionar
+        </div>
+      </td>
+      <td><%= sede.Facultad %></td>
+      <td><%= sede.Sede %></td>
+    </tr>
+  <% end %>
+  <tr class="paginationTr"><td colspan="3"></td></tr>
+</tbody>

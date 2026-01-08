@@ -1,0 +1,22 @@
+<div class="div_section">
+  <h3 class="siac_title">Administración de convocatorias</h3>
+  <hr>
+
+	<h1>Detalles de la Convocatoria</h1>
+
+	<p><strong>Resolución:</strong> <%= @convocatoria.resolucion %></p>
+	<p><strong>Nombre:</strong> <%= @convocatoria.nombre %></p>
+	<p><strong>Fecha de inicio:</strong> <%= @convocatoria.fecha_inicio.strftime('%d/%m/%Y') %></p>
+	<p><strong>Fecha de finalización:</strong> <%= @convocatoria.fecha_hasta.strftime('%d/%m/%Y') %></p>
+	<p><strong>Titulaciones:</strong> <%= @convocatoria.titulaciones %></p>
+	<p><strong>Etapa:</strong> <%= @convocatoria.etapa %></p>
+
+
+</div>
+
+
+<%= link_to 'Volver a las convocatorias', convocatorias_path %>
+
+<% content_for :header_tags do %>
+	<%= stylesheet_link_tag 'siac.css', plugin: :utn_siac %>
+<% end %>

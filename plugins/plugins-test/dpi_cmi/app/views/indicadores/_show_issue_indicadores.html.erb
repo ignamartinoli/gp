@@ -1,0 +1,70 @@
+<%if issue.project.module_enabled?(:CMI) %>
+	<%if issue.tracker == Tracker.find_by_name("Indicador")%>
+		<hr />
+		<%if issue.tipo_indicador=="de Resultado" %>
+			<p><strong>Actualizar Automáticamente: <%= issue.valor_automatico ? "Sí" : "No" %></strong></p>
+			<% if issue.valor == 1 %>
+				<p style="color:#468847;"><strong>Indicador alcanzado!</strong></p>
+			<%else%>
+				<p style="color:#b94a48;"><strong>Indicador no alcanzado aún!</strong></p>
+			<%end%>
+		<%else%>
+			<%valores_alcance={"Anual"=>1,"Semestral"=>2,"Cuatrimestral"=>3,"Trimestral"=>4,"Bimestral"=>6,"Mensual"=>12}%>
+			<p><strong>Propiedades Globales del Indicador</strong></p>
+			<table class="attributes">
+				<tbody>
+					<tr><th style="color:#b94a48;">Semáforo Mínimo:</th><td><%= number_with_delimiter(issue.ind_min, :delimiter => '.') %></td><th>Frecuencia:</th><td><%= valores_alcance.key(issue.alcance) %></td></tr>
+					<tr><th style="color:#C6C633;">Semáforo Medio:</th><td><%= number_with_delimiter(issue.ind_med, :delimiter => '.') %></td><th>Tipo:</th><td><%= issue.tipo_indicador %></td></tr>
+					<tr><th style="color:#468847;">Semáforo Máximo:</th><td><%= number_with_delimiter(issue.ind_max, :delimiter => '.') %></td>
+						<th>Valor:</th>
+								<td>
+									<%= number_with_delimiter(issue.valor, :delimiter => '.') %>
+									<%if User.current.allowed_to?(:manage_historic_values, issue.project)%>
+										<%= link_to "(Ver históricos)", issue_historic_values_path(issue)%>
+									<%end%>
+								</td>
+					</tr>
+					<tr><th>Actualizar Automáticamente:</th><td><%= issue.valor_automatico ? "Sí" : "No" %></td><th></th><td></td></tr>
+					<%if issue.project.cmi_trackers_con_peso.include?(issue.tracker_id.to_s)%>
+						<tr><th>CMI Peso:</th><td><%= issue.valor_peso %></td><th></th><td></td></tr>
+					<%end%>
+				</tbody>
+			</table>
+			<%if issue.alcance>1 %>
+				<hr />
+				<div class="splitcontent">
+				<%issue.periodos.each do |semaforo|%>
+					<div class="<%=semaforo.periodo % 2 == 0 ? "splitcontentright" : "splitcontentleft"%> <%= issue.periodo_actual== semaforo.periodo ? " periodo-actual" : ""%>">
+					<strong><p style="text-decoration:underline;">Semáforos de período <%=semaforo.periodo%> <%= issue.periodo_actual== semaforo.periodo ? "(ACTUAL)" : ""%></p></strong>
+						<%if @project.cmi_validar_fecha_inicio_indicadores && semaforo.issue.start_date && semaforo.issue.due_date%>
+							<%rango=semaforo.periodo_evaluacion_inicio..semaforo.periodo_evaluacion_fin%>
+							<%if semaforo.periodo_evaluacion_inicio && semaforo.periodo_evaluacion_fin %>
+								<%if rango.include?(semaforo.issue.start_date) && rango.include?(semaforo.issue.due_date) %>
+									<p>Evaluación del <%=I18n.l(semaforo.issue.start_date, format: :tradicional)%> al <%=I18n.l(semaforo.issue.due_date, format: :tradicional)%></p>
+								<%elsif rango.include?(semaforo.issue.start_date) %>
+									<p>Evaluación del <%=I18n.l(semaforo.issue.start_date, format: :tradicional)%> al <%=I18n.l(semaforo.periodo_evaluacion_fin, format: :tradicional)%></p>
+								<%elsif rango.include?(semaforo.issue.due_date) %>
+									<p>Evaluación del <%=I18n.l(semaforo.periodo_evaluacion_inicio, format: :tradicional)%> al <%=I18n.l(semaforo.issue.due_date, format: :tradicional)%></p>
+								<%elsif (semaforo.periodo_evaluacion_inicio<semaforo.issue.start_date && semaforo.periodo_evaluacion_fin<semaforo.issue.due_date) || semaforo.periodo_evaluacion_inicio>semaforo.issue.due_date%>
+									<p>Período fuera de evaluación</p>
+								<%else%>
+									<p>Evaluación del <%=I18n.l(semaforo.periodo_evaluacion_inicio, format: :tradicional)%> al <%=I18n.l(semaforo.periodo_evaluacion_fin, format: :tradicional)%></p>
+								<%end%>
+							<%end%>
+						<%end%>
+					<table class="attributes">
+						<tbody>
+							<tr><th>Semáforo Mínimo:</th><td><%= number_with_delimiter(semaforo.ind_min, :delimiter => '.') %></td></tr>
+							<tr><th>Semáforo Medio:</th><td><%= number_with_delimiter(semaforo.ind_med, :delimiter => '.') %></td></tr>
+							<tr><th>Semáforo Máximo:</th><td><%= number_with_delimiter(semaforo.ind_max, :delimiter => '.') %></td></tr>
+						</tbody>
+					</table>
+					</div>
+				<%end%>
+				</div>
+			<%end%>
+		<%end%>
+	<%elsif issue.project.cmi_trackers_con_peso.include?(issue.tracker_id.to_s) && issue.valor_peso %>
+		<p><strong>CMI Peso:</strong> <%= issue.valor_peso %></p>
+	<%end%>
+<%end%>

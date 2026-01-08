@@ -1,0 +1,16 @@
+<% if @custom_field.present? && @custom_field.field_format == 'attachment' %>
+  <div class="warning-convert"
+       style="margin:1em 0; border:1px solid #d00; padding:1em;
+              background-color: rgba(215, 0, 0, 0.5); display:inline-block;">
+    <p style="padding-left: 0px !important;">
+      ⚠️ Este campo es de tipo <b>fichero</b>.  
+      Podés convertirlo a <b>Archivos Múltiples</b> si lo necesitás.
+    </p>
+
+    <%= link_to 'Convertir a Multiple Attachments',
+          convert_field_cf_modifications_path(@custom_field.id),
+          method: :post,
+          data: { confirm: '¿Seguro? Este cambio puede afectar datos previos.' },
+          class: 'icon icon-save button' %>
+  </div>
+<% end %>

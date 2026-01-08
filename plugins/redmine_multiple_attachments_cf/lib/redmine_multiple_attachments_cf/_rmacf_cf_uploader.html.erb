@@ -1,0 +1,104 @@
+<% issue = @issue %>
+<% cf_id = 278 %> <%# <= CAMBIÁ ESTE ID POR EL DE TU CAMPO %>
+<% cf = issue.try(:available_custom_fields).to_a.find{|c| c.id == cf_id } %>
+<% if cf.present? %>
+  <% raw_csv = issue.custom_field_value(cf.id).to_s %>
+  <% ids     = raw_csv.split(',').map(&:strip).reject(&:blank?) %>
+  <% atts    = ids.present? ? Attachment.where(id: ids).index_by{|a| a.id.to_s} : {} %>
+
+  <div class="rmacf-uploader" data-cf-id="<%= cf.id %>">
+    <div class="rmacf-label"><%= h(cf.name) %></div>
+
+    <ul class="rmacf-list" id="rmacf-list-<%= cf.id %>">
+      <% ids.each do |aid| %>
+        <% if (a = atts[aid]) %>
+          <li class="rmacf-item rmacf-item--persisted" data-attachment-id="<%= a.id %>">
+            <span class="rmacf-name"><%= h(a.filename) %></span>
+            <span class="rmacf-meta"><%= number_to_human_size(a.filesize) %></span>
+            <a href="<%= download_named_attachment_url(a, a.filename) %>" target="_blank" class="rmacf-link">ver</a>
+            <button type="button" class="rmacf-remove" title="Quitar">&times;</button>
+          </li>
+        <% end %>
+      <% end %>
+    </ul>
+
+    <div class="rmacf-drop">
+      <input type="file"
+             id="rmacf-input-<%= cf.id %>"
+             name="multiple_attachments_cf[<%= cf.id %>][]"
+             multiple />
+      <div class="rmacf-drop-hint">Arrastrá o click para elegir</div>
+    </div>
+
+    <input type="hidden" name="multiple_attachments_cf_remove[<%= cf.id %>]" id="rmacf-remove-<%= cf.id %>" value="">
+  </div>
+
+  <script>
+  (function(){
+    var cfId     = "<%= cf.id %>";
+    var csvSel   = "#issue_custom_field_values_" + cfId; // input original (CSV de IDs)
+    var csvInput = document.querySelector(csvSel);
+    if (csvInput) { var p = csvInput.closest('p') || csvInput.parentElement; if (p) p.style.display = 'none'; }
+
+    var root       = document.querySelector('.rmacf-uploader[data-cf-id="<%= cf.id %>"]');
+    if (!root) return;
+    var list       = root.querySelector('#rmacf-list-<%= cf.id %>');
+    var fileInput  = root.querySelector('#rmacf-input-<%= cf.id %>');
+    var removed    = root.querySelector('#rmacf-remove-<%= cf.id %>');
+    var pending    = [];
+
+    function syncCSV() {
+      if (!csvInput) return;
+      var kept = Array.prototype.slice.call(list.querySelectorAll('.rmacf-item--persisted'))
+        .filter(function(li){ return !li.classList.contains('rmacf-item--to-delete'); })
+        .map(function(li){ return li.getAttribute('data-attachment-id'); })
+        .filter(Boolean);
+      csvInput.value = kept.join(',');
+    }
+
+    function renderPending() {
+      Array.prototype.slice.call(list.querySelectorAll('.rmacf-item--pending')).forEach(function(li){ li.remove(); });
+      pending.forEach(function(file, idx){
+        var li = document.createElement('li');
+        li.className = 'rmacf-item rmacf-item--pending';
+        li.dataset.pendingIndex = String(idx);
+        var name = document.createElement('span');
+        name.className = 'rmacf-name'; name.textContent = file.name;
+        var btn = document.createElement('button');
+        btn.type='button'; btn.className='rmacf-remove'; btn.title='Quitar'; btn.innerHTML='&times;';
+        btn.addEventListener('click', function(){
+          var i = parseInt(li.dataset.pendingIndex, 10);
+          pending.splice(i, 1);
+          var dt = new DataTransfer();
+          pending.forEach(function(f){ dt.items.add(f); });
+          fileInput.files = dt.files;
+          renderPending();
+        });
+        li.appendChild(name); li.appendChild(btn); list.appendChild(li);
+      });
+    }
+
+    list.addEventListener('click', function(ev){
+      if (!ev.target.classList.contains('rmacf-remove')) return;
+      var li = ev.target.closest('.rmacf-item--persisted'); if (!li) return;
+      var id = li.getAttribute('data-attachment-id');
+      var rem = (removed.value || '').split(',').map(function(x){return x.trim();}).filter(Boolean);
+      if (rem.indexOf(id) === -1) rem.push(id);
+      removed.value = rem.join(',');
+      li.classList.add('rmacf-item--to-delete'); ev.target.remove(); syncCSV();
+    });
+
+    fileInput.addEventListener('change', function(ev){
+      var files = Array.prototype.slice.call(ev.target.files || []);
+      var dt = new DataTransfer();
+      pending.forEach(function(f){ dt.items.add(f); });
+      files.forEach(function(f){ dt.items.add(f); });
+      fileInput.files = dt.files;
+      pending = Array.prototype.slice.call(fileInput.files || []);
+      renderPending();
+    });
+
+    syncCSV();
+  })();
+  </script>
+<% end %>

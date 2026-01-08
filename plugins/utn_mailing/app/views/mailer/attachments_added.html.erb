@@ -1,0 +1,38 @@
+<!-- HEADER -->
+<div style="background: #627a93; padding: 10px 0; text-align: center;">
+  <img src="https://i.postimg.cc/Y00m4WLK/UTN-header-blanco.png" alt="UTN" style="max-width: 100%; height: auto;">
+  <h2 style="color: #FFFFFF; font-size: 24px; text-transform: uppercase; letter-spacing: 3px;">
+    SEC. PLANEAMIENTO: SEGUIMIENTO DE CARRERAS
+  </h2>
+  <br>
+  <p style="color: #FFFFFF; font-size: 40px"><b>[NO RESPONDER]</b><p>
+</div>
+
+<!-- CONTENIDO -->
+<div style="max-width: 100%; height: auto; background: #7e94a9; padding: 20px; color: #fff; text-align: center;">
+  <h2>📎 Archivos adjuntos añadidos</h2>
+
+  <p style="font-size: 16px;">
+    Se agregaron nuevos archivos adjuntos al siguiente ítem:
+  </p>
+
+  <p style="font-size: 18px; font-weight: bold; margin: 15px 0;">
+    <a href="<%= @added_to_url %>" style="color: #ffffff; text-decoration: underline;">
+      <%= @added_to %>
+    </a>
+  </p>
+
+  <ul style="list-style-type: none; padding: 0; font-size: 16px; margin-top: 20px;">
+    <% @attachments.each do |attachment| %>
+      <li>📄 <%= attachment.filename %></li>
+    <% end %>
+  </ul>
+</div>
+
+<!-- FOOTER -->
+<hr style="margin-top: 30px; border: none; border-top: 1px solid #ccc;" />
+<p style="font-size: 12px; color: #666; line-height: 1.4; margin-top: 15px; text-align: center">
+  Has recibido este mensaje porque estás involucrado en una actividad de la
+  <strong>Secretaría de Planeamiento Académico</strong> de la <strong>Universidad Tecnológica Nacional</strong>.<br>
+  De no ser así, ponte en contacto con <a href="mailto:gdonato@rec.utn.edu.ar">gdonato@rec.utn.edu.ar</a> para eliminarte de nuestra base de datos.
+</p>

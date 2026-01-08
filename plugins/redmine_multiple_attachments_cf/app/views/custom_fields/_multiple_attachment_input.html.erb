@@ -1,0 +1,41 @@
+<%# app/views/custom_fields/_multiple_attachment_input.html.erb %>
+<% ids  = value.to_s.split(',').map(&:strip).reject(&:blank?) %>
+<% atts = ids.present? ? Attachment.where(id: ids).index_by { |a| a.id.to_s } : {} %>
+
+<div class="rmacf-input" data-cf-id="<%= cf.id %>">
+  <ul class="rmacf-list">
+    <% ids.each do |aid| %>
+      <% if (a = atts[aid]) %>
+        <li class="rmacf-item rmacf-item--persisted" data-attachment-id="<%= a.id %>">
+          <span class="rmacf-name"><%= h a.filename %></span>
+          <span class="rmacf-meta"><%= number_to_human_size(a.filesize) %></span>
+          <a class="rmacf-link" target="_blank" href="<%= download_named_attachment_url(a, a.filename) %>">ver</a>
+          <button type="button" class="rmacf-remove" title="Quitar">&times;</button>
+        </li>
+      <% end %>
+    <% end %>
+  </ul>
+
+  <div class="rmacf-drop" data-allowed=".pdf,.doc,.docx,.zip,.rar" data-max="30">
+    <input type="file"
+           name="multiple_attachments_cf[<%= cf.id %>][]"
+           id="rmacf-input-<%= cf.id %>"
+           multiple
+           accept=".zip,.rar,.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+    <div class="rmacf-drop-hint">
+      Arrastrá o click para elegir (PDF/DOC/DOCX/ZIP/RAR) — máx. 30 archivos
+    </div>
+  </div>
+
+  <!-- CSV que Redmine lee/escribe -->
+  <input type="hidden"
+         name="<%= tag_name %>"
+         id="issue_custom_field_values_<%= cf.id %>"
+         value="<%= h value %>">
+
+  <!-- Acumular IDs removidos -->
+  <input type="hidden"
+         name="multiple_attachments_cf_remove[<%= cf.id %>]"
+         id="rmacf-remove-<%= cf.id %>"
+         value="">
+</div>

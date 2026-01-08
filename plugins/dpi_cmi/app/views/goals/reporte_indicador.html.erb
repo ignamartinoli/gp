@@ -1,0 +1,84 @@
+<table width=100%>
+  <tbody>
+    <tr>
+      <td class="reporte-cabecera" width=70%>
+        <h1><strong>Proyecto <%= @project.name%></strong></h1>
+      </td>
+      <td class="reporte-cabecera" width=30%>
+        <h4><strong>FECHA DE REPORTE:</strong> <%= format_date(Date.today) %></h4>
+        <h4><strong>RESPONSABLE:</strong> <%= User.current %></h4>
+        <h4><strong>EVALUACION:</strong> <%= @show_calculo_actual ? "A la fecha" : "Anual" %></h4>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br />
+<table class="tabla-reporte-indicador">
+  <tbody>
+    <tr class="tr-perspectiva">
+      <th width=50%> <%= @valor_perspectiva %></th>
+      <th width=25%> Asignado a</th>
+      <th width=25%> <%= "#{calculate_ratio(@lista)}" %></th>
+    </tr>
+    <tr>
+      <th width=50%> <%= link_to goal_link(@programa), @programa %></th>
+      <th width=25%> <%= @programa.assigned_to%> </th>
+      <th width=25%> <%= @programa.done_ratio %>%</th>
+    </tr>
+    <tr>
+      <td align="left"><%= link_to goal_link(@goal.parent), @goal.parent%></td>
+      <td align="center"><%= @goal.parent.assigned_to%></td>
+      <td align="center">
+        <div id="chart_obj" class="plot" style="background:transparent;height:100px;width:200px;"></div>
+        <script type="text/javascript">
+        $(document).ready(function(){
+           s1 = [<%= @goal.parent.estado(@show_calculo_actual)%>];
+           plot_obj = $.jqplot('chart_obj',[s1],{
+               seriesDefaults: {
+                   renderer: $.jqplot.MeterGaugeRenderer,
+                   rendererOptions: {
+                       //label: 'Estado Objetivo',
+                       //labelPosition: 'bottom',
+                       //labelHeightAdjust: -5,
+                       //intervalOuterRadius: 85,
+                       showTickLabels: false,
+                       //ticks: [10000, 30000, 50000, 70000],
+                       intervals:[1, 2, 3, 4],
+                       intervalColors:['#ee2830', '#f69025', '#fdbe28', '#209a8b']
+                   }
+               },
+               grid: {
+                background: 'transparent'
+              }
+           });
+        });
+        </script>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="3"  align="center">
+        <h4 align="left"><%= link_to goal_link(@goal), @goal %></h4>
+        <div id="chart_ind_<%=@goal.id%>" class="plot_ind" style="background:transparent;width:90%;"></div>
+        <script type="text/javascript">
+        $(document).ready(function(){
+          var line1=<%= @goal.valores_historicos.html_safe %>;
+          var plot_ind = $.jqplot('chart_ind_<%=@goal.id%>', [line1], {
+            title:'<%= "#{@project.name} | #{@goal.subject}" %>',
+            seriesDefaults: {
+              pointLabels: { show:true }
+            },
+            axes:{
+                xaxis:{
+                    renderer:$.jqplot.DateAxisRenderer
+                }
+            },
+            series:[
+              {lineWidth:2, markerOptions:{color:'#384763'} }
+            ]
+          });
+        });
+        </script>
+      </td>
+    </tr>
+  </tbody>
+</table>

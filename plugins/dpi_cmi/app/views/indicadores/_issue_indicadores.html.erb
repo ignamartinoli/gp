@@ -1,0 +1,139 @@
+<%if issue.project.module_enabled?(:CMI) && User.current.allowed_to?(:modificar_valores_indicador, issue.project) %>
+	<%if issue.tracker == Tracker.find_by_name("Indicador")%>
+	<script type="text/javascript" charset="utf-8">
+		function toggleTipo(element) {
+			if (element.value=="Simetrico") {
+			  $('#prorateo').hide();
+			  $('#tipo_check').hide();
+			  $('.tipo_multiple').show();
+			}
+			else if (element.value=="Asimetrico") {
+			  $('#prorateo').show();
+			  $('#tipo_check').hide();
+			  $('.tipo_multiple').show();
+			}
+			else {
+			  $('#tipo_check').show();
+			  $('.tipo_multiple').hide();
+			  $('#prorateo').hide();
+			}
+		};
+		function addCommas(element) {
+				var str=element.value.replace(/\D/g,'');
+		    var len = str.length,
+		        output = "",
+		        i = len - 1;
+		    while(i >= 0) {
+		        output = str.charAt(i) + output;
+		        if ((len - i) % 3 === 0 && i > 0) {
+		            output = "." + output;
+		        }
+		        --i;
+		    }
+				element.value=output;
+		};
+		window.onload = function() {
+			addCommas(document.getElementById('issue_ind_min'));
+			addCommas(document.getElementById('issue_ind_med'));
+			addCommas(document.getElementById('issue_ind_max'));
+			addCommas(document.getElementById('valor'));
+			<%issue.periodos.each_with_index do |semaforo,i|%>
+				addCommas(document.getElementById('issue_periodos_attributes_<%=i%>_ind_min'));
+				addCommas(document.getElementById('issue_periodos_attributes_<%=i%>_ind_med'));
+				addCommas(document.getElementById('issue_periodos_attributes_<%=i%>_ind_max'));
+			<%end%>
+			document.getElementById('issue-form').onsubmit = function() {
+		    var txt_min = document.getElementById('issue_ind_min');
+		    txt_min.value = txt_min.value.replace(/\D/g,'');
+				var txt_med = document.getElementById('issue_ind_med');
+		    txt_med.value = txt_med.value.replace(/\D/g,'');
+				var txt_max = document.getElementById('issue_ind_max');
+		    txt_max.value = txt_max.value.replace(/\D/g,'');
+				var txt_valor = document.getElementById('valor');
+		    txt_valor.value = txt_valor.value.replace(/\D/g,'');
+				<%issue.periodos.each_with_index do |semaforo,i|%>
+					var txt_min_<%=i%> = document.getElementById('issue_periodos_attributes_<%=i%>_ind_min');
+					txt_min_<%=i%>.value = txt_min_<%=i%>.value.replace(/\D/g,'');
+					var txt_med_<%=i%> = document.getElementById('issue_periodos_attributes_<%=i%>_ind_med');
+					txt_med_<%=i%>.value = txt_med_<%=i%>.value.replace(/\D/g,'');
+					var txt_max_<%=i%> = document.getElementById('issue_periodos_attributes_<%=i%>_ind_max');
+					txt_max_<%=i%>.value = txt_max_<%=i%>.value.replace(/\D/g,'');
+				<%end%>
+	  	};
+		};
+	</script>
+		<fieldset><legend>Propiedades del Indicador</legend>
+			<div class="tipo_multiple" style="<%= 'display: none;' if @issue.tipo_indicador=="de Resultado" %>">
+				<div class="splitcontentright">
+					<p style="color:#b94a48;"><%= form.text_field(:ind_min, :required=>true, :onkeyup=>"addCommas(this)")%></p>
+					<p style="color:#C6C633;"><%= form.text_field(:ind_med, :required=>true, :onkeyup=>"addCommas(this)")%></p>
+					<p style="color:#468847;"><%= form.text_field(:ind_max, :required=>true, :onkeyup=>"addCommas(this)")%></p>
+				</div>
+			</div>
+			<div class="splitcontentleft">
+				<p><%= form.select(:tipo_indicador, options_for_select(["Simetrico","Asimetrico", "de Resultado"],issue.tipo_indicador),{},:onchange => "toggleTipo(this)") %></p>
+				<p><%= form.check_box(:valor_automatico)%></p>
+				<div class="tipo_multiple" style="<%= 'display: none;' if @issue.tipo_indicador=="de Resultado" %>">
+					<p><%= form.select(:alcance, options_for_select([["Anual",1],["Semestral",2],["Cuatrimestral",3],["Trimestral",4],["Bimestral",6],["Mensual",12]],issue.alcance)) %></p>
+					<p><%= form.text_field(:valor, :required=>true, :id=>"valor", :onkeyup=>"addCommas(this)")%></p>
+				</div>
+				<div id="tipo_check" style="<%= 'display: none;' if @issue.tipo_indicador!="de Resultado" %>">
+					<p>
+						<%if @issue.valor==1 %>
+							Indicador alcanzado <%= check_box_tag(:valor,"valor",true, :id=>"checkbox")%>
+						<%else%>
+							Indicador alcanzado <%= check_box_tag(:valor,"valor",false, :id=>"checkbox")%>
+						<%end%>
+					</p>
+					<script type="text/javascript">
+					  var checkbox = document.getElementById('checkbox');
+					  var hidden = document.getElementById('valor');
+					  checkbox.addEventListener('change', function() {
+					    hidden.value = (this.checked) ? 1 : 0;
+					  }, false);
+					</script>
+				</div>
+				<p><%= form.text_field(:valor_peso) if @issue.project.cmi_trackers_con_peso.include?(@issue.tracker_id.to_s)%></p>
+			</div>
+			<% if !@issue.new_record? %>
+				<div id="prorateo" style="<%= 'display: none;' if @issue.tipo_indicador!="Asimetrico" %>">
+					<hr style="height:0px;" />
+					<%= form.fields_for(:periodos) do |builder| %>
+						<%= render :partial =>"indicadores/periodos_fields", :locals => {:f => builder }%>
+					<% end %>
+				</div>
+			<%end%>
+		</fieldset>
+	<%elsif @issue.project.cmi_trackers_con_peso.include?(@issue.tracker_id.to_s) %>
+		<fieldset><legend>CMI - SYSPE</legend>
+			<div class="splitcontentleft">
+				<p><%= form.text_field(:valor_peso)%></p>
+			</div>
+		</fieldset>
+	<%end%>
+<%elsif issue.project.module_enabled?(:CMI)%>
+		<%if issue.tracker == Tracker.find_by_name("Indicador")%>
+			<fieldset><legend>Propiedades del Indicador</legend>
+				<div class="splitcontentleft">
+					<div class="tipo_multiple" style="<%= 'display: none;' if @issue.tipo_indicador=="de Resultado" %>">
+						<p><%= form.text_field(:valor, :required=>true, :id=>"valor")%></p>
+					</div>
+					<div id="tipo_check" style="<%= 'display: none;' if @issue.tipo_indicador!="de Resultado" %>">
+						<p>
+							<%if @issue.valor==1 %>
+								Indicador alcanzado <%= check_box_tag(:valor,"valor",true, :id=>"checkbox")%>
+							<%else%>
+								Indicador alcanzado <%= check_box_tag(:valor,"valor",false, :id=>"checkbox")%>
+							<%end%>
+						</p>
+						<script type="text/javascript">
+						  var checkbox = document.getElementById('checkbox');
+						  var hidden = document.getElementById('valor');
+						  checkbox.addEventListener('change', function() {
+						    hidden.value = (this.checked) ? 1 : 0;
+						  }, false);
+						</script>
+					</div>
+				</div>
+		<%end%>
+<%end%>

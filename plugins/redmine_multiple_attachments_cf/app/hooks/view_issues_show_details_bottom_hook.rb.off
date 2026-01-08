@@ -1,0 +1,19 @@
+class ViewIssuesFormDetailsBottomHook < Redmine::Hook::ViewListener
+  # Renderizamos el partial UNA VEZ POR CADA CF del tipo "multiple_attachment"
+  def view_issues_form_details_bottom(context = {})
+    issue = context[:issue]
+    return '' unless issue
+
+    fields = issue.editable_custom_fields.select { |cf| cf.field_format == 'multiple_attachment' }
+    return '' if fields.empty?
+
+    # renderizamos la colección, pasando cada cf como :custom_field
+    context[:controller].send(:render_to_string, {
+      partial: 'hooks/multiple_attachment_field',
+      collection: fields,
+      as: :custom_field,
+      locals: { f: context[:form] } # por si lo querés usar
+    })
+  end
+end
+

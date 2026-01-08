@@ -1,0 +1,92 @@
+<%# Este partial se usa en DOS contextos:
+    1) Formulario de ADMIN de Campo Personalizado (locals: f, custom_field)
+    2) Formulario de Issues (hook + valor del campo). %>
+
+<% cf = local_assigns[:custom_field] rescue nil %>
+
+<%# --- MODO ADMIN (edición/creación del campo personalizado) ---
+    Cuando estás en Administración → Campos personalizados → Editar/Nuevo,
+    Redmine renderiza form_partial sin @issue.
+    En este modo no necesitamos opciones extra; dejamos una leyenda. %>
+<% if !(defined?(@issue) && @issue.present?) %>
+  <div class="box">
+    <p class="info">
+      <%= l(:label_multiple_attachment) %> — <%= l(:text_no_configuration_data) rescue 'sin opciones específicas' %>.
+      Solo acepta PDF,WORD,ZIP, RAR y guardará las IDs de los adjuntos en el valor del campo.
+    </p>
+  </div>
+  <%# Nada más que hacer en el modo admin del campo %>
+  <% return %>
+<% end %>
+
+<%# --- MODO ISSUE (crear/editar ticket) ---
+    Mostrar input file múltiple, IDs ocultos y lista de adjuntos ya asociados. %>
+<%# Nota: esperamos que el hook haya pasado locals con :custom_field si hace falta. %>
+
+<div class="box">
+  <p>
+    <label><%= cf ? cf.name : l(:label_multiple_attachment) %></label><br/>
+
+    <% current_ids = @issue.custom_field_value(cf.id) rescue [] %>
+    <input type="hidden"
+           name="issue[custom_field_values][<%= cf.id %>]"
+           value="<%= Array(current_ids).join(',') %>"
+           id="multi_attach_cf_<%= cf.id %>"/>
+
+    <input type="file"
+           name="multiple_attachments_cf[<%= cf.id %>][]"
+           multiple
+           accept="application/pdf,.pdf"/>
+
+    <% ids = Array(current_ids).map(&:to_i).reject(&:zero?) %>
+    <% if ids.any? %>
+      <ul>
+        <% Attachment.where(id: ids).each do |att| %>
+          <li>
+            <%= link_to(att.filename, download_named_attachment_path(att, att.filename)) %>
+            (<%= number_to_human_size(att.filesize) %>)
+            <label style="margin-left:8px;">
+              <input type="checkbox"
+                     name="multiple_attachments_cf_remove[<%= cf.id %>][]"
+                     value="<%= att.id %>"/>
+              <%= l(:button_delete) %>
+            </label>
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  </p>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var cfId   = '<%= cf.id %>';
+  var cfName = '<%= j cf.name %>';
+
+  // 1) Intento por "for" (instalaciones vanilla)
+  var label = document.querySelector('label[for="issue_custom_field_values_' + cfId + '"]');
+
+  // 2) Fallback por texto (tu caso: label sin "for")
+  if (!label) {
+    label = Array.from(document.querySelectorAll('label'))
+      .find(function (el) {
+        return el && el.textContent.trim().replace(/\s+/g, ' ').indexOf(cfName) === 0;
+      });
+  }
+
+  if (label) {
+    // Fila izquierda (label) y derecha (control vacío del CF estándar)
+    var left  = label.closest('.splitcontentleft') || label.closest('p');
+    var right = left && left.nextElementSibling;
+
+    if (left)  left.style.display  = 'none';
+    if (right && right.classList.contains('splitcontentright')) right.style.display = 'none';
+  }
+
+  // 3) (Opcional) Ocultar el adjuntador general "Ficheros" del issue
+  //    Comentá estas 2 líneas si querés mantenerlo visible.
+  //var at = document.getElementById('attachments_form');
+  //if (at) at.style.display = 'none';
+});
+</script>
+

@@ -1,0 +1,120 @@
+<div class="div_section">
+  <h3 class="siac_title">
+    CONVOCATORIA: <%= @convocatoria.nombre %>
+  </h3>
+  <br>
+  <h3>
+    <strong>Fecha cierre:</strong>
+    <%= @convocatoria.fecha_hasta.strftime("%d/%m/%Y") %>
+  </h3>
+
+  <%= flash[:debug] %>
+  <table class="table custom-table">
+    <thead>
+      <tr>
+        <th scope="col">Facultad Regional</th>
+        <th scope="col">Extensión Aulica</th>
+        <th scope="col">Usuario Encargado</th>
+        <th scope="col">Etapa Actual</th>
+        <th scope="col">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @sedes.each do |sede| %>
+        <tr>
+          <td>
+            <%= sede.regional&.nombre || "-" %>
+          </td>
+
+          <td>
+            <%= sede.nombre %>
+          </td>
+
+         <td>
+            <% usuario = @clientes_por_regional[sede.regional&.id] %>
+
+            <% if usuario.present? %>
+              <%= "#{usuario.firstname} #{usuario.lastname}" %>
+            <% else %>
+              -
+            <% end %>
+          </td>
+
+
+          <td>
+            <span class="estado-etapa <%= @convocatoria.etapa.to_s.downcase %>">
+              <%= @convocatoria.etapa %>
+            </span>
+          </td>
+
+          <td>
+            <div class="action_bar solo-visual">
+
+              <span class="tooltip disabled">
+                <span class="tooltiptext">Marcar convocatoria (próximamente)</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                    fill="currentColor" class="bi bi-bookmark" viewBox="0 0 16 16">
+                  <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.777.416L8 13.101l-5.223 2.815A.5.5 0 0 1 2 15.5z"/>
+                </svg>
+              </span>
+
+              <span class="tooltip disabled">
+                <span class="tooltiptext">Editar convocatoria (próximamente)</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                    fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+                  <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0z"/>
+                  <path fill-rule="evenodd"
+                        d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0z"/>
+                </svg>
+              </span>
+
+              <span class="tooltip disabled">
+                <span class="tooltiptext">Vista previa (próximamente)</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                    fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
+                  <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5z"/>
+                  <path d="M8 5.5a2.5 2.5 0 1 0 0 5z"/>
+                </svg>
+              </span>
+
+              <span class="tooltip disabled">
+                <span class="tooltiptext">Ver detalles (próximamente)</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                    fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16">
+                  <path d="M8 15A7 7 0 1 0 8 1z"/>
+                  <circle cx="8" cy="4.5" r="1"/>
+                </svg>
+              </span>
+
+              <span class="tooltip disabled">
+                <span class="tooltiptext">Eliminar convocatoria (no disponible)</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                    fill="currentColor" class="bi bi-trash3 disabled" viewBox="0 0 16 16">
+                  <path d="M6.5 1h3a.5.5 0 0 1 .5.5z"/>
+                </svg>
+              </span>
+
+            </div>
+          </td>
+        </tr>
+      <% end %>
+      <tr class="paginationTr">
+        <td colspan="5">
+          <div class="pagination_menu">
+            <%= paginate @sedes %>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+
+  </table>
+  <div class="submit-container">
+    <%= link_to "Volver a las convocatorias", convocatorias_path, class: "siac_button" %>
+  </div>
+</div>
+
+
+<% content_for :header_tags do %>
+  <%= stylesheet_link_tag "siac.css", plugin: :utn_siac %>
+  <%= javascript_include_tag "funciones_siac", plugin: :utn_siac %>
+<% end %>

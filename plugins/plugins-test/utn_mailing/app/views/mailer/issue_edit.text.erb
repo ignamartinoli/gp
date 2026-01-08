@@ -1,0 +1,33 @@
+🎫 Petición Editada: <%= @issue.subject %>
+
+Proyecto: <%= @issue.project.name %>
+Autor: <%= @issue.author.name %>
+Prioridad: <%= @issue.priority.name %>
+
+Descripción:
+<%= @issue.description %>
+
+Ver en Redmine:
+<%= url_for(controller: 'issues', action: 'show', id: @issue, only_path: false) %>
+
+----------------------------------------
+
+<%= "(#{l(:field_private_notes)}) " if @journal.private_notes? -%><%= l(:text_issue_updated, id: "##{@issue.id}", author: @journal.user) %>
+
+<% details_to_strings(@journal_details, true).each do |string| -%>
+<%= string %>
+<% end -%>
+
+<% if @journal.notes? -%>
+<%= @journal.notes %>
+
+<% end -%>
+
+----------------------------------------
+
+<%= render partial: 'issue', formats: [:text], locals: { issue: @issue, user: @user, issue_url: @issue_url } %>
+
+----------------------------------------
+
+Has recibido este mensaje porque estás involucrado en una actividad de la Secretaría de Planeamiento Académico de la Universidad Tecnológica Nacional.
+Si no corresponde, contacta a gdonato@rec.utn.edu.ar para eliminarte.

@@ -33,5 +33,4 @@
 /Gemfile.local
 
 /docker-compose-entorno3.yml
-/plugins/*
 /plugins-prod2/*
