@@ -485,11 +485,84 @@
         if (linkEl) linkEl.classList.add("is-active");
       }
 
-      function bindComponentTabs(root) { /* ... tu código tal cual ... */ }
-      function getCurrentMode(root) { /* ... */ }
-      function setModeButtons(root, mode) { /* ... */ }
-      function applyModeToComponent(compEl, mode) { /* ... */ }
-      function bindModeTabs(root) { /* ... */ }
+      // --- Tabs de componentes dentro de una dimension ---
+      function bindComponentTabs(root) {
+          if (!root) return;
+
+          var tabs = Array.prototype.slice.call(root.querySelectorAll('[data-componente-tab="true"]'));
+          var blocks = Array.prototype.slice.call(root.querySelectorAll(".componente-section"));
+
+          if (!tabs.length || !blocks.length) return;
+
+          function activateTab(tabEl) {
+              tabs.forEach(function (t) { t.classList.remove("is-active"); });
+              tabEl.classList.add("is-active");
+
+              var targetId = tabEl.getAttribute("data-target");
+              blocks.forEach(function (b) {
+                  b.classList.toggle("is-visible", b.id === targetId);
+              });
+
+              // When component changes, ensure current mode is applied (info/auto)
+              var visibleComp = root.querySelector(".componente-section.is-visible");
+              if (visibleComp) applyModeToComponent(visibleComp, getCurrentMode(root));
+          }
+
+          tabs.forEach(function (t) {
+              if (t.__boundClick) return;
+              t.addEventListener("click", function () { activateTab(t); });
+              t.__boundClick = true;
+          });
+
+          var active = root.querySelector(".componente-tab.is-active") || tabs[0];
+          if (active) activateTab(active);
+      }
+
+      // --- Subtabs: INFORMACION / AUTOEVALUACION (per dimension) ---
+      function getCurrentMode(root) {
+          var active = root.querySelector('[data-campos-tab="true"].is-active');
+          return active ? active.getAttribute("data-mode") : "info";
+      }
+
+      function setModeButtons(root, mode) {
+          var btns = Array.prototype.slice.call(root.querySelectorAll('[data-campos-tab="true"]'));
+          btns.forEach(function (b) {
+              b.classList.toggle("is-active", b.getAttribute("data-mode") === mode);
+          });
+      }
+
+      function applyModeToComponent(compEl, mode) {
+          var groups = Array.prototype.slice.call(compEl.querySelectorAll("[data-campos-group]"));
+          groups.forEach(function (g) {
+              g.classList.toggle("is-visible", g.getAttribute("data-campos-group") === mode);
+          });
+      }
+
+      function bindModeTabs(root) {
+          if (!root) return;
+
+          var btns = Array.prototype.slice.call(root.querySelectorAll('[data-campos-tab="true"]'));
+          if (!btns.length) return;
+
+          btns.forEach(function (b) {
+              if (b.__boundClick) return;
+              b.addEventListener("click", function () {
+                  var mode = b.getAttribute("data-mode") || "info";
+                  setModeButtons(root, mode);
+
+                  // Apply to currently visible component in this dimension
+                  var visibleComp = root.querySelector(".componente-section.is-visible");
+                  if (visibleComp) applyModeToComponent(visibleComp, mode);
+              });
+              b.__boundClick = true;
+          });
+
+          // Ensure default mode is applied
+          var mode = getCurrentMode(root);
+          setModeButtons(root, mode);
+          var visibleComp = root.querySelector(".componente-section.is-visible");
+          if (visibleComp) applyModeToComponent(visibleComp, mode);
+      }
 
       function bindDimensionUI(dimEl) {
         bindModeTabs(dimEl);
@@ -927,18 +1000,25 @@
         if (fb && fb.classList.contains('invalid-feedback')) fb.remove();
       }
 
-      document.querySelector('.step-btn.next').addEventListener('click', function () {
-        const active = document.querySelector('.step-content.active');
-        const stepName = active.dataset.step;
+      var nextBtn = document.querySelector('.step-btn.next');
+      if (nextBtn) {
+        nextBtn.addEventListener('click', function () {
+          var active = document.querySelector('.step-content.active');
+          if (!active) return;
 
-        const errors = validateStep(stepName);
-        if (Object.keys(errors).length > 0) {
-          active.querySelector('.is-invalid').scrollIntoView({behavior: 'smooth'});
-          return;
-        }
+          var stepName = active.dataset.step;
+          var errors = validateStep(stepName);
 
-        avanzarStep();
-      });
+          if (Object.keys(errors).length > 0) {
+            var firstInvalid = active.querySelector('.is-invalid');
+            if (firstInvalid) firstInvalid.scrollIntoView({ behavior: 'smooth' });
+            return;
+          }
+
+          if (typeof avanzarStep === 'function') avanzarStep();
+        });
+      }
+
 
 
   </script>
