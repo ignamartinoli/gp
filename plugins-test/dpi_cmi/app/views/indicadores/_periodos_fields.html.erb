@@ -1,6 +1,0 @@
-<div class="<%= f.object.periodo % 2 == 0 ? "splitcontentright" : "splitcontentleft"%>">
-	<p><p><label>Periodo <%= f.object.periodo%> </label></p>
-	<p><%= f.text_field(:ind_min, :required=>true, :onkeyup=>"addCommas(this)")%></p>
-	<p><%= f.text_field(:ind_med, :required=>true, :onkeyup=>"addCommas(this)")%></p>
-	<p><%= f.text_field(:ind_max, :required=>true, :onkeyup=>"addCommas(this)")%></p></p>
-</div>

@@ -1,7 +1,0 @@
-= Plugin utn_planeamiento
-
-changesets
-
-
-Requerimientos Incluidos
-*Ocultar campos Prioridad y Archivos adjuntos 

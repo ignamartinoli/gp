@@ -1,9 +1,0 @@
-<%if @issue && @issue.project.module_enabled?(:CMI) %>
-	<%if @issue.project.puede_generar_reporte?(@issue.tracker_id.to_s)%>
-		<h3>Exportar</h3>
-		<ul>
-			<li><%= link_to 'Generar Reporte', export_to_docx_path(:id=>@issue.id,:format=>"docx") %></li>
-			<li><%= link_to 'Generar Reporte de Gestion', export_gestion_to_docx_path(:id=>@issue.id,:format=>"docx") %></li>
-		</ul>
-	<%end%>
-<%end%>

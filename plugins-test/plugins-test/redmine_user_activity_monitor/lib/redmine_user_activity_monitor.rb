@@ -1,2 +1,0 @@
-require_relative 'hooks/user_activity_logger'
-require_relative 'hooks/user_activity_hook_listener'
