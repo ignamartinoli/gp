@@ -1,0 +1,55 @@
+<!-- HEADER -->
+<div style="background: #627a93; padding: 10px 0; text-align: center;">
+  <img src="https://i.postimg.cc/Y00m4WLK/UTN-header-blanco.png" alt="UTN" style="max-width: 100%; height: auto;">
+  <h2 style="color: #FFFFFF; font-size: 24px; text-transform: uppercase; letter-spacing: 3px;">
+    SEC. PLANEAMIENTO: SEGUIMIENTO DE CARRERAS
+  </h2>
+  <br>
+  <p style="color: #FFFFFF; font-size: 40px"><b>[NO RESPONDER]</b><p>
+</div>
+
+<!-- CONTENIDO DEL MAIL -->
+<div style="max-width: 100%; height: auto; text-align:center; background:#7e94a9">
+    <br>
+    <h2 style="color: #000000;">🎫 Ticket Editado: <%=h @issue.subject %></h2>
+
+    <p><strong>Proyecto:</strong> <%=h @issue.project.name %></p>
+    <p><strong>Autor:</strong> <%=h @issue.author.name %></p>
+    <p><strong>Prioridad:</strong> <%=h @issue.priority.name %></p>
+
+    <p><strong>Descripción:</strong></p>
+    <div style="background: #f9f9f9; padding: 10px; border: 1px solid #ccc; width:90%; margin-left:5%">
+    <%=h @issue.description %>
+    <b>
+      <%= "(#{l(:field_private_notes)}) " if @journal.private_notes? -%><%= l(:text_issue_updated, id: "##{@issue.id}", author: @journal.user) %>
+    </b>
+    <% details_to_strings(@journal_details, true).each do |string| -%>
+    <%= string %>
+    <% end -%>
+
+    <% if @journal.notes? -%>
+    <%= @journal.notes %>
+
+    <% end -%>
+    <br>
+
+    <%= render partial: 'issue', locals: { issue: @issue, user: @user, issue_url: @issue_url } %>
+
+    </div>
+
+    <p>
+    🔗 <a href="<%= url_for(:controller => 'issues', :action => 'show', :id => @issue, :only_path => false) %>" style="text-decoration:none; color:white">
+        Ver ticket en Redmine
+    </a>
+    </p>
+
+    <br>
+</div>
+
+
+<!-- FOOTER -->
+<hr style="margin-top: 30px; border: none; border-top: 1px solid #ccc;" />
+<p style="font-size: 12px; color: #666; line-height: 1.4; margin-top: 15px; text-align: center">
+  Has recibido este mensaje porque estás involucrado en una actividad de la <strong>Secretaría de Planeamiento Académico</strong> de la <strong>Universidad Tecnológica Nacional</strong>.<br>
+  De no ser así, ponte en contacto con <a href="mailto:gdonato@rec.utn.edu.ar">gdonato@rec.utn.edu.ar</a> para eliminarte por completo de nuestra base de datos. Gracias.
+</p>

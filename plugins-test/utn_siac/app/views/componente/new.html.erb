@@ -1,0 +1,351 @@
+<%= form_for @componente, url: create_componente_path, html: { onsubmit: 'return validarNuevoComponente(event)' }, id: 'formComponente' do |f| %>
+
+  <div class="div_section">
+    <h3 class="siac_title">Nueva Componente</h3>
+    <hr>
+    <h3>Parámetros Generales</h3> 
+
+    <!-- Campos del componente -->
+
+    <div class="field-container">
+      <div class="long-field-4">
+        <div class="lf4c1">
+          <%= f.label :nombre, 'Nombre de Componente: ' %>
+        </div>
+        <div class="lf4c2">
+          <span class="tooltip">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">
+              <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"/>
+            </svg>
+            <span class="tooltiptext">Nombre representativo para identificar la componente.</span>
+          </span>
+        </div>
+        <div class="lf4c3">
+          <%= f.text_field :nombre, id: 'inputNombreComponente' %>
+        </div>
+        <div class="lf4c4 errorNombre">
+        
+        </div>
+      </div>
+    </div>
+
+
+    <div class="field-container">
+      <div class="long-field-4">
+        <div class="lf4c1">
+          <%= f.label :descripcion, 'Descripción de Componente: ' %>
+        </div>
+        <div class="lf4c2">
+          <span class="tooltip">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">
+              <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"/>
+            </svg>
+            <span class="tooltiptext">Descripción breve sobre la función de la componente.</span>
+          </span>
+        </div>
+        <div class="lf4c3">
+          <%= f.text_field :descripcion, id:'inputDescripcionComponente'  %>
+        </div>
+        <div class="lf4c4 errorDescripcion">
+        </div>
+      </div>
+    </div>
+
+    <div class="field-container">
+      <div class="long-field-4">
+        <div class="lf4c1">
+          <%= f.label :dimension_id, 'Dimensión:' %>
+        </div>
+        <div class="lf4c2">
+          <span class="tooltip">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">
+              <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"/>
+            </svg>
+            <span class="tooltiptext">Dimensión relacionada a la componente.</span>
+          </span>
+        </div>
+        <div class="lf4c3">
+          <%= f.select :dimension_id, options_from_collection_for_select(@dimensiones, :id, :dimension), include_blank: 'Selecciona una opción', id: 'componenteDimensionId' %>
+        </div>
+        <div class="lf4c4 errorDimension">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="div_section">
+    <!-- Campos anidados -->
+    <div id="campos">
+      <h3 class="siac_title">Campos</h3>
+      <hr>
+      <% @componente.campos.each_with_index do |campo, index| %>
+        <%= f.fields_for :campos, campo do |campo_form| %>
+          <div class="nested-fields campo" data-index="<%= index + 1 %>" id="<%= index + 1 %>">
+            <h3>Campo <span class="campo-index"><%= index + 1 %></span></h3>
+
+            <%= campo_form.hidden_field :autoevaluacion, value: 0, class: "campo-autoevaluacion" %>
+
+            <div class="long-field-4">
+              <div class="lf4c1">
+                <%= campo_form.label :pregunta, "Pregunta:" %>
+              </div>
+              <div class="lf4c2">
+              <span class="tooltip">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">
+                  <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"/>
+                </svg>
+                <span class="tooltiptext">Pregunta tal cual figurara en el formulario.</span>
+              </span>
+              </div>
+              <div class="lf4c3">
+              <%= campo_form.text_field :pregunta, class: "inputPregunta" %>
+              </div>
+              <div class="lf4c4 errorPreguntaCampo">
+              </div>
+            </div>
+
+            <div class="long-field-2">
+              <div class="lf2c1">
+                <%= campo_form.label :obligatorio, "¿Es obligatorio completar este campo?" %>
+              </div>
+              <div class="lf2c2">
+                <div class="checkboxContainer">
+                  <%= campo_form.check_box :obligatorio, { class: "checkbox" }, "1", "0" %>
+                </div>  
+              </div>
+            </div>
+
+            <div class="long-field-2">
+              <div class="lf2c1">
+                <%= campo_form.label :tiene_pregunta_orientadora, "¿Este campo posee pregunta orientadora?" %>
+              </div>
+              <div class="lf2c2">
+                <div class="checkboxContainer">
+                  <%= campo_form.check_box :tiene_pregunta_orientadora, { class: "checkbox checkbox_pregunta_orientadora" }, "1", "0" %>
+                </div>  
+              </div>
+            </div>
+
+            <div class="long-field-4 pregunta_orientadora_container" style="display:none">
+              <div class="lf4c1">           
+                <%= campo_form.label :descripcion , "Pregunta Orientadora:" %>
+              </div>           
+              <div class="lf4c2">           
+                <span class="tooltip">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">
+                    <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"/>
+                  </svg>
+                  <span class="tooltiptext">Pregunta para guiar la respuesta.</span>
+                </span>
+              </div>           
+              <div class="lf4c3">           
+                <%= campo_form.text_area :descripcion , class: "inputPreguntaOrientadora" %>
+              </div>           
+              <div class="lf4c4 errorPreguntaOrientadora">
+              </div>           
+            </div>
+
+
+            <div class="long-field-4">
+              <div class="lf4c1">
+                <%= campo_form.label :tipo_campo_id, "Tipo de Campo:" %>
+              </div>          
+              <div class="lf4c2">
+                <span class="tooltip">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">
+                    <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"/>
+                  </svg>
+                  <span class="tooltiptext">Tipo de campo habilitado para la respuesta a la pregunta</span>
+                </span>
+              </div>          
+              <div class="lf4c3">
+                <%= campo_form.select :tipo_campo_id, options_for_select([["Selecciona una opción", ""]] + @tipos_campo.map { |t| [t.nombre, t.id] }), { id: "selectTipoCampo_#{index}" }, 
+        { class: "tipo-campo" } %>
+              </div>          
+              <div class="lf4c4 errorTipoCampo">
+              </div>          
+            </div>    
+
+            <div class="tipo-campo-container">
+            </div>
+
+
+            <div class="long-field-2">
+              <div class="lf2c1">
+                <%= campo_form.label :permite_adjuntos, "¿Este campo permite adjuntar archivos?" %>
+              </div>
+              <div class="lf2c2">
+                <div class="checkboxContainer">
+                  <%= campo_form.check_box :permite_adjuntos, { class: "checkbox checkbox_permite_adjuntos" }, "1", "0" %>
+                </div> 
+              </div>
+            </div>
+
+            <div class="subcampos-container">
+            </div>
+
+            <div class="buttonera-2-c">
+              <div class="b2cb1">
+                <%= link_to "+ Agregar un nuevo SubCampo", "#", id: "add_subcampo", class: "add_subfield siac_button" %>
+              </div>
+              <div class="b2cb2">
+                <%= link_to "Eliminar Campo", "#", class: "remove_fields siac_button" %>
+              </div>
+            </div>
+            <hr>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+
+    <div class="buttonera-1-c">
+      <%= link_to "+ Agregar un nuevo Campo a la Componente", "#", id: "add_field", class: "add_field siac_button" %>
+    </div>
+    
+  </div>
+
+  <div class="div_section">
+    <h3 class="siac_title">Autoevaluación</h3>
+    <hr>
+      <!-- Campos anidados -->
+    <div id="campos-autoeval">
+      <% @componente.campos.each_with_index do |campo, index| %>
+        <%= f.fields_for :campos, campo do |campo_form| %>
+          <div class="nested-fields-autoeval campo" data-index="<%= index + 1 %>">
+            <h3>Campo <span class="campo-index"><%= index + 1 %></span></h3>
+
+            <%= campo_form.hidden_field :autoevaluacion, value: 1, class: "campo-autoevaluacion" %>
+
+            <div class="long-field-4">
+              <div class="lf4c1">
+                <%= campo_form.label :pregunta, "Pregunta:" %>
+              </div>
+              <div class="lf4c2">
+              <span class="tooltip">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">
+                  <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"/>
+                </svg>
+                <span class="tooltiptext">Pregunta tal cual figurara en el formulario.</span>
+              </span>
+              </div>
+              <div class="lf4c3">
+              <%= campo_form.text_field :pregunta, class: "inputPregunta" %>
+              </div>
+              <div class="lf4c4 errorPreguntaCampo">
+              </div>
+            </div>
+
+            <div class="long-field-2">
+              <div class="lf2c1">
+                <%= campo_form.label :obligatorio, "¿Es obligatorio completar este campo?" %>
+              </div>
+              <div class="lf2c2">
+                <div class="checkboxContainer">
+                  <%= campo_form.check_box :obligatorio, { class: "checkbox" }, "1", "0" %>
+                </div>  
+              </div>
+            </div>
+
+            <div class="long-field-2">
+              <div class="lf2c1">
+                <%= campo_form.label :tiene_pregunta_orientadora, "¿Este campo posee pregunta orientadora?" %>
+              </div>
+              <div class="lf2c2">
+                <div class="checkboxContainer">
+                  <%= campo_form.check_box :tiene_pregunta_orientadora, { class: "checkbox checkbox_pregunta_orientadora" }, "1", "0" %>
+                </div>  
+              </div>
+            </div>
+
+            <div class="long-field-4 pregunta_orientadora_container" style="display:none">
+              <div class="lf4c1">           
+                <%= campo_form.label :descripcion , "Pregunta Orientadora:" %>
+              </div>           
+              <div class="lf4c2">           
+                <span class="tooltip">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">
+                    <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"/>
+                  </svg>
+                  <span class="tooltiptext">Pregunta para guiar la respuesta.</span>
+                </span>
+              </div>           
+              <div class="lf4c3">           
+                <%= campo_form.text_area :descripcion , class: "inputPreguntaOrientadora" %>
+              </div>           
+              <div class="lf4c4 errorPreguntaOrientadora">
+              </div>           
+            </div>
+
+
+            <div class="long-field-4">
+              <div class="lf4c1">
+                <%= campo_form.label :tipo_campo_id, "Tipo de Campo:" %>
+              </div>          
+              <div class="lf4c2">
+                <span class="tooltip">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">
+                    <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"/>
+                  </svg>
+                  <span class="tooltiptext">Tipo de campo habilitado para la respuesta a la pregunta</span>
+                </span>
+              </div>          
+              <div class="lf4c3">
+                <%= campo_form.select :tipo_campo_id, options_for_select([["Selecciona una opción", ""]] + @tipos_campo.map { |t| [t.nombre, t.id] }), { id: "selectTipoCampo_#{index}" }, 
+        { class: "tipo-campo" } %>
+              </div>          
+              <div class="lf4c4 errorTipoCampo">
+              </div>          
+            </div>    
+
+            <div class="tipo-campo-container">
+            </div>
+
+            <div class="long-field-2">
+              <div class="lf2c1">
+                <%= campo_form.label :permite_adjuntos, "¿Este campo permite adjuntar archivos?" %>
+              </div>
+              <div class="lf2c2">
+                <div class="checkboxContainer">
+                  <%= campo_form.check_box :permite_adjuntos, { class: "checkbox checkbox_permite_adjuntos" }, "1", "0" %>
+                </div> 
+              </div>
+            </div>
+
+            <div class="subcampos-container">
+            </div>
+
+
+            <div class="buttonera-2-c">
+              <div class="b2cb1">
+                <%= link_to "+ Agregar un nuevo SubCampo", "#", id: "add_subcampo", class: "add_subfield siac_button" %>
+              </div>
+              <div class="b2cb2">
+                <%= link_to "Eliminar Campo", "#", class: "remove_fields siac_button" %>
+              </div>
+            </div>
+            <hr>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+
+    <div class="buttonera-1-c">
+      <%= link_to "+ Agregar un nuevo Campo a la Autoevaluación", "#", id: "add_field_autoeval", class: "add_field siac_button" %>
+    </div>
+  </div>
+
+  <div class="submit-container">
+    <input type="submit" id="inputSubmit" class="submit siac_button" value="Crear Componente">
+  </div>
+<% end %>
+
+<%= link_to 'Volver a componentes', componentes_path %>
+
+<% content_for :header_tags do %>
+  <%= stylesheet_link_tag 'siac.css', plugin: :utn_siac %>
+  <%= javascript_include_tag 'validaciones_componentes', plugin: :utn_siac %>
+  <%= javascript_include_tag 'componentes', plugin: :utn_siac %>
+  <%= csrf_meta_tags %>
+<% end %>
+
+

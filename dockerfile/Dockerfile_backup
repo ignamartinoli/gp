@@ -1,0 +1,32 @@
+FROM ruby:2.5.3
+
+RUN sed -i 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list && \
+    sed -i '/security.debian.org/d' /etc/apt/sources.list && \
+    sed -i '/stretch-updates/d' /etc/apt/sources.list && \
+    echo "Acquire::Check-Valid-Until \"false\";" > /etc/apt/apt.conf.d/99no-check-valid-until && \
+    apt-get update -qq && apt-get install -y --allow-unauthenticated \
+    build-essential \
+    default-libmysqlclient-dev \
+    nodejs \
+    git \
+    libffi-dev \
+    libyaml-dev \
+    libmagic-dev \
+    file
+
+# Seteo el directorio de trabajo
+WORKDIR /app
+
+# Copio el contenido del proyecto (Redmine + plugins)
+COPY . /app
+
+# ✅ Actualizo RubyGems para evitar errores con gems modernas
+RUN gem update --system 3.2.3
+
+# Instalo las gems (bundle install)
+RUN bundle install
+
+
+
+# Inicio el servidor
+CMD ["bundle", "exec", "rails", "s", "-b", "0.0.0.0"]

@@ -1,0 +1,24 @@
+== Direccion de Proyectos Informaticos - CMI
+
+CMI is a Redmine plugin to have a summary of projects’ management metrics.
+It calculates and shows with graphs different metrics, such as actual effort, cost, progress or deviation from the goals of the projects.
+
+== Install
+
+Important note: read install notes before installing.
+
+1. Make sure you have installed the Redmine version 2.0.0 or higher.
+2. Follow the Redmine plugin installation steps at:
+   http://www.redmine.org/wiki/redmine/Plugins.
+3. Install the plugin running the commands below from your Redmine directory
+   (if you are going to run Redmine in, e.g. the production environment, you
+   need to append RAILS_ENV=production to each line):
+     rake cmi:create_tracker
+     rake cmi:create_goal_kind
+     rake cmi:create_goal_indicators
+5. Restart your Redmine web servers (e.g. mongrel, thin, mod_rails).
+6. Login to your Redmine install as an Administrator.
+7. Under admininstration, trackers, edit Goal tracker and select the that you want
+have Goals.
+
+Note: if you don't see any correctly the content of goals tab, you will need to copy dpi_cmi/assets/* to <redmine_root>/plugin_assets/dpi_cmi/ or to make a symbolic link <redmine_root>/plugin_assets/dpi_cmi pointing to dpi_cmi/assets

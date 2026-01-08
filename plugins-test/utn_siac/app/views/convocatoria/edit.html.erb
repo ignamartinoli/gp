@@ -1,0 +1,43 @@
+<div class="div_section">
+
+  <h3 class="siac_title">Editar convocatoria</h3>
+  <hr>
+  <h3>Parametros generales</h3>
+
+  <%= form_for @convocatoria, url: update_convocatoria_path(@convocatoria), method: :patch do |f| %>
+    <div class="field">
+      <%= f.label :resolucion, "Resolución: " %>
+      <%= f.text_field :resolucion %>
+    </div>
+    <div class="field">
+      <%= f.label :nombre, "Nombre: " %>
+      <%= f.text_field :nombre %>
+    </div>
+    <div class="field">
+      <%= f.label :titulaciones, "Titulación: " %>
+      <%= f.select :titulaciones,
+               options_for_select(@titulaciones, @convocatoria.titulaciones) %>
+    </div>
+    <label>Fecha:</label>
+    <div class="form_row">
+      <div class="field">
+        <%= f.label :fecha_inicio, "Desde: " %>
+        <%= f.date_field :fecha_inicio %>
+      </div>
+      <div class="field">
+        <%= f.label :fecha_hasta, "Hasta:" %>
+        <%= f.date_field :fecha_hasta %>
+      </div>
+    </div>
+    <div class="actions">
+      <%= f.submit "Actualizar Convocatoria" %>
+    </div>
+  <% end %>
+
+</div>
+
+<%= link_to "Volver a las convocatorias", convocatorias_path %>
+
+<% content_for :header_tags do %>
+  <%= stylesheet_link_tag "siac.css", plugin: :utn_siac %>
+<% end %>

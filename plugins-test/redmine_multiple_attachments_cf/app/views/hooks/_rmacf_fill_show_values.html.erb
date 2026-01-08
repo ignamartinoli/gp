@@ -1,0 +1,97 @@
+<% issue = @issue || (defined?(context) ? context[:issue] : nil) %>
+<% return unless issue %>
+
+<%
+payload = {}
+issue.custom_field_values.each do |cv|
+  next unless cv.custom_field.try(:field_format) == 'multiple_attachment'
+  ids = cv.value.to_s.split(',').map(&:strip).reject(&:blank?)
+  next if ids.empty?
+  atts    = Attachment.where(id: ids).index_by{|a| a.id.to_s}
+  ordered = ids.map{|i| atts[i]}.compact
+  next if ordered.empty?
+
+  items = ordered.map { |a| "<li>#{link_to_attachment(a, download: false)}</li>" }
+  payload[cv.custom_field_id] = {
+    id:   cv.custom_field_id,
+    name: cv.custom_field.name,
+    html: "<ul class='attachments'>#{items.join}</ul>"
+  }
+end
+%>
+
+<% if payload.present? %>
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  var data = <%= raw(payload.to_json) %>;
+
+  Object.values(data).forEach(function(meta){
+    var replaced = false;
+
+    // 1) Target por id de CF (ej: .cf_278 .value)
+    var byId = document.querySelector('.cf_' + meta.id + '.attribute .value');
+    if (byId) {
+      byId.innerHTML = meta.html;  // <- reemplazar SIEMPRE
+      replaced = true;
+    }
+
+    // 2) Fallback: por texto del label
+    if (!replaced) {
+      var labels = document.querySelectorAll('.attributes .label');
+      labels.forEach(function(lbl){
+        var text = (lbl.textContent || '').replace(':','').trim();
+        if (text === meta.name) {
+          var v = lbl.parentElement.querySelector('.value') || lbl.nextElementSibling;
+          if (v) v.innerHTML = meta.html;  // <- reemplazar SIEMPRE
+          replaced = true;
+        }
+      });
+    }
+
+    // 3) Último recurso: agregar un bloque nuevo
+    if (!replaced) {
+      var attrs = document.querySelector('#issue .attributes') || document.querySelector('.attributes');
+      if (attrs) {
+        var div = document.createElement('div');
+        div.className = 'attribute';
+        div.innerHTML = '<div class="label">'+meta.name+':</div><div class="value">'+meta.html+'</div>';
+        attrs.appendChild(div);
+      }
+    }
+  });
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  try {
+    // Ocultar "Ficheros" para los adjuntos del CF
+    var sections = Array.from(document.querySelectorAll('.attachments')).filter(function(sec){
+      var prev = sec.previousElementSibling;
+      return prev && /^(Ficheros|Files|Ficheiros)$/i.test(prev.textContent.trim());
+    });
+
+    sections.forEach(function(sec){
+      var table = sec.querySelector('table');
+      if (!table || !table.tBodies || !table.tBodies[0]) return;
+
+      var tbody = table.tBodies[0];
+      Array.from(tbody.rows).forEach(function(tr){
+        var tds = tr.querySelectorAll('td');
+        if (tds[1] && /custom_field:multiple_attachments/.test(tds[1].textContent)) {
+          tr.remove();
+        }
+      });
+
+      if (!tbody.rows.length) {
+        var title = sec.previousElementSibling;
+        if (title && /^(Ficheros|Files|Ficheiros)$/i.test(title.textContent.trim())) title.remove();
+        sec.remove();
+      }
+    });
+  } catch (e) {
+    // si el theme cambia estructuras, no romper
+  }
+});
+</script>
+<% end %>

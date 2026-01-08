@@ -1,0 +1,16 @@
+<tbody id="especialidades-container">
+  <% especialidades.each do |especialidad| %>
+    <tr id="<%= especialidad.codigo %>">
+      <td>
+        <div class="checkboxConvContainer">
+          <input type="checkbox" class="checkbox rowCheckboxes" id="check<%= especialidad.codigo %>" name="especialidad_codigos[]" value="<%= especialidad.codigo %>">
+          Seleccionar
+        </div>
+      </td>
+      <td><%= especialidad.codigo %></td>
+      <td><%= especialidad.nombre %></td>
+    </tr>
+  <% end %>
+  <tr class="paginationTr"><td colspan=3></td></tr>
+</tbody>
+

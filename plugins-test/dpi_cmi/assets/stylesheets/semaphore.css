@@ -1,0 +1,14 @@
+option[value='Semaforo Med'] {
+  background-color: #f89406;
+  color: #f89406;
+}
+
+option[value='Semaforo Min'] {
+  background-color: #b94a48;
+  color: #b94a48;
+}
+
+option[value='Semaforo Max'] {
+  background-color: #468847;
+  color: #468847;
+}

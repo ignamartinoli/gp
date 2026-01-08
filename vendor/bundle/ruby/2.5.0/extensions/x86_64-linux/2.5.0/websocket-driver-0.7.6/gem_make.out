@@ -1,0 +1,15 @@
+current directory: /home/agus/Documentos/redmine4-master-basegp2/redmine4-master/vendor/bundle/ruby/2.5.0/gems/websocket-driver-0.7.6/ext/websocket-driver
+/home/agus/.rbenv/versions/2.5.3/bin/ruby -I /home/agus/.rbenv/versions/2.5.3/lib/ruby/site_ruby/2.5.0 -r ./siteconf20241129-35384-18y4yz7.rb extconf.rb
+creating Makefile
+
+current directory: /home/agus/Documentos/redmine4-master-basegp2/redmine4-master/vendor/bundle/ruby/2.5.0/gems/websocket-driver-0.7.6/ext/websocket-driver
+make "DESTDIR=" clean
+
+current directory: /home/agus/Documentos/redmine4-master-basegp2/redmine4-master/vendor/bundle/ruby/2.5.0/gems/websocket-driver-0.7.6/ext/websocket-driver
+make "DESTDIR="
+compiling websocket_mask.c
+linking shared-object websocket_mask.so
+
+current directory: /home/agus/Documentos/redmine4-master-basegp2/redmine4-master/vendor/bundle/ruby/2.5.0/gems/websocket-driver-0.7.6/ext/websocket-driver
+make "DESTDIR=" install
+/usr/bin/install -c -m 0755 websocket_mask.so ./.gem.20241129-35384-17enmub

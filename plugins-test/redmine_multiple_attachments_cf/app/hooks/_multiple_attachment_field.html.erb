@@ -1,0 +1,46 @@
+<% cf = local_assigns[:custom_field] %>
+<% next unless cf && cf.field_format == 'multiple_attachment' %>
+
+<div class="box rmacf-input" data-cf-id="<%= cf.id %>">
+  <p>
+    <label><%= cf.name %></label><br/>
+
+    <% current_ids = @issue.custom_field_value(cf.id) %>
+
+    <!-- CSV que Redmine consume -->
+    <input type="hidden"
+           name="issue[custom_field_values][<%= cf.id %>]"
+           value="<%= Array(current_ids).join(',') %>"
+           id="issue_custom_field_values_<%= cf.id %>"/>
+
+    <!-- Uploader (ahora con tipos y tope expuestos) -->
+    <div class="rmacf-drop" data-allowed=".pdf,.doc,.docx,.zip,.rar" data-max="30">
+      <input type="file"
+             name="multiple_attachments_cf[<%= cf.id %>][]"
+             id="rmacf-input-<%= cf.id %>"
+             multiple
+             accept=".zip,.rar,.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+      <div class="rmacf-drop-hint">
+        Arrastrá o click para elegir (PDF/DOC/DOCX/ZIP/RAR) — máx. 30 archivos
+      </div>
+    </div>
+
+    <!-- Lista de existentes -->
+    <% ids = Array(current_ids).map(&:to_i).reject(&:zero?) %>
+    <% if ids.any? %>
+      <ul class="rmacf-list">
+        <% Attachment.where(id: ids).each do |att| %>
+          <li class="rmacf-item rmacf-item--persisted" data-attachment-id="<%= att.id %>">
+            <%= link_to(att.filename, download_named_attachment_path(att, att.filename)) %>
+            (<%= number_to_human_size(att.filesize) %>)
+            <!-- Botón/checkbox para remover (tu backend ya lo soporta) -->
+            <button type="button" class="rmacf-remove" title="<%= l(:button_delete) %>">&times;</button>
+            <input type="checkbox"
+                   name="multiple_attachments_cf_remove[<%= cf.id %>][]" value="<%= att.id %>"
+                   style="display:none">
+          </li>
+        <% end %>
+      </ul>
+    <% end %>
+  </p>
+</div>

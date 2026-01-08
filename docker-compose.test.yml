@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  redmine-test:
+    container_name: gp-redmine-test
+    build:
+      context: .
+      dockerfile: dockerfile/Dockerfile
+    environment:
+      RAILS_ENV: development
+      REDMINE_DB_MYSQL: gp-mysql
+      REDMINE_DB_DATABASE: redmine_test
+      REDMINE_DB_USERNAME: root
+      REDMINE_DB_PASSWORD: root
+    volumes:
+      - ./public/files-test:/usr/src/redmine/files
+      - ./plugins-test:/app/plugins
+      - ./themes:/usr/src/redmine/public/themes
+      - ./config/database.yml:/usr/src/redmine/config/database.yml
+    ports:
+      - "3001:3000"
+

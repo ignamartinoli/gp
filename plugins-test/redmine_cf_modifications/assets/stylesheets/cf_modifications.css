@@ -1,0 +1,5 @@
+/* Forzamos que el formulario de edición de CF se muestre inline */
+#custom_field_form {
+  display: inline !important;
+  /*width: 100%;*/
+}

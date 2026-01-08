@@ -1,0 +1,10 @@
+<% unless @issue.visible_attachments_excluding_custom_fields.empty? %>
+  <div class="attachments">
+    <p><strong><%= l(:label_attachment_plural) %></strong></p>
+    <ul>
+      <% @issue.visible_attachments_excluding_custom_fields.each do |attachment| %>
+        <li><%= link_to_attachment attachment %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>

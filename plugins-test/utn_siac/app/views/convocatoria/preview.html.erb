@@ -1,0 +1,681 @@
+<%# app/views/convocatoria/preview.html.erb %>
+
+<%# Precompute componentes of this convocatoria grouped by dimension to keep the view fast and clean %>
+<%
+  componentes_de_convocatoria = @convocatoria.componentes.includes(:campos, :dimension)
+  componentes_por_dimension = componentes_de_convocatoria.group_by(&:dimension_id)
+%>
+
+<div class="convocatoria-layout">
+  <!-- COLUMNA IZQUIERDA: PANEL DE DIMENSIONES -->
+  <div class="dimensiones-column">
+    <!-- Icono de colapso abajo a la derecha -->
+    <button
+      id="dimensiones-collapse-toggle"
+      class="dimensiones-collapse-toggle"
+      type="button"
+      aria-label="Ocultar/mostrar panel de dimensiones"
+      aria-expanded="true"
+    >
+      «
+    </button>
+
+    <div id="dimensiones-panel" class="div_section dimensiones-panel">
+      <div class="dimensiones-header">
+        <span class="dimensiones-title">Dimensiones</span>
+      </div>
+
+      <% if @dimensiones.present? %>
+        <nav class="dimensiones-nav">
+          <ul class="dimensiones-list">
+            <% @dimensiones.each_with_index do |dimension, i| %>
+              <li class="dimensiones-item">
+                <a
+                  href="#dimension-<%= dimension.id %>"
+                  class="dimensiones-link <%= 'is-active' if i == 0 %>"
+                  data-dimension-link="true"
+                  data-target="dimension-<%= dimension.id %>"
+                >
+                  <span class="dimensiones-index"><%= i + 1 %>.</span>
+                  <span class="dimensiones-name"><%= dimension.dimension %></span>
+                </a>
+              </li>
+            <% end %>
+          </ul>
+        </nav>
+      <% else %>
+        <p class="dimensiones-empty">No hay dimensiones asociadas.</p>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- COLUMNA DERECHA: DETALLE DE CONVOCATORIA + DIMENSIONES -->
+  <div class="convocatoria-column">
+    <div class="div_section">
+      <h3 class="siac_title">Administración de convocatorias</h3>
+      <hr>
+
+      <h1>Detalles de la Convocatoria</h1>
+
+      <p><strong>Resolución:</strong> <%= @convocatoria.resolucion %></p>
+      <p><strong>Nombre:</strong> <%= @convocatoria.nombre %></p>
+      <p><strong>Fecha de inicio:</strong> <%= @convocatoria.fecha_inicio.strftime("%d/%m/%Y") %></p>
+      <p><strong>Fecha de finalización:</strong> <%= @convocatoria.fecha_hasta.strftime("%d/%m/%Y") %></p>
+      <p><strong>Titulaciones:</strong> <%= @convocatoria.titulaciones %></p>
+      <p><strong>Etapa:</strong> <%= @convocatoria.etapa %></p>
+
+      <hr>
+      <h2>Dimensiones asociadas</h2>
+
+      <% if @dimensiones.present? %>
+        <% @dimensiones.each_with_index do |dimension, idx| %>
+          <% componentes = (componentes_por_dimension[dimension.id] || []) %>
+
+          <section
+            class="dimension-section <%= 'is-visible' if idx == 0 %>"
+            id="dimension-<%= dimension.id %>"
+          >
+            <% if componentes.any? %>
+
+              <!-- ================= Row 1: COMPONENTES ================= -->
+              <div class="componentes-tabs" role="tablist" aria-label="Componentes">
+                <% componentes.each_with_index do |componente, c_idx| %>
+                  <button
+                    type="button"
+                    class="componente-tab <%= 'is-active' if c_idx == 0 %>"
+                    data-componente-tab="true"
+                    data-target="componente-<%= componente.id %>"
+                  >
+                    <%= componente.nombre %>
+                  </button>
+                <% end %>
+              </div>
+
+              <!-- ================= Row 2: INFORMACION / AUTOEVALUACION ================= -->
+              <div class="subtabs" role="tablist" aria-label="Tipo de campos">
+                <button
+                  type="button"
+                  class="subtab is-active"
+                  data-campos-tab="true"
+                  data-mode="info"
+                >
+                  INFORMACIÓN
+                </button>
+
+                <button
+                  type="button"
+                  class="subtab"
+                  data-campos-tab="true"
+                  data-mode="auto"
+                >
+                  AUTOEVALUACIÓN
+                </button>
+              </div>
+
+              <!-- ================= Content: each componente has 2 groups ================= -->
+              <div class="componentes-content">
+                <% componentes.each_with_index do |componente, c_idx| %>
+                  <div
+                    class="componente-section <%= 'is-visible' if c_idx == 0 %>"
+                    id="componente-<%= componente.id %>"
+                  >
+                    <% campos_info = componente.campos.select { |c| c.autoevaluacion.to_i == 0 } %>
+                    <% campos_auto = componente.campos.select { |c| c.autoevaluacion.to_i == 1 } %>
+
+                    <div class="campos-group is-visible" data-campos-group="info">
+                      <% if campos_info.any? %>
+                        <div class="campos-list">
+                          <% campos_info.each_with_index do |campo, index| %>
+                            <%= generar_campo(campo, index + 1) %>
+                          <% end %>
+                        </div>
+                      <% else %>
+                        <div class="campos-empty"><em>(Sin campos de información)</em></div>
+                      <% end %>
+                    </div>
+
+                    <div class="campos-group" data-campos-group="auto">
+                      <% if campos_auto.any? %>
+                        <div class="campos-list">
+                          <% campos_auto.each_with_index do |campo, index| %>
+                            <%= generar_campo(campo, index + 1) %>
+                          <% end %>
+                        </div>
+                      <% else %>
+                        <div class="campos-empty"><em>(Sin campos de autoevaluación)</em></div>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+
+            <% else %>
+              <p><em>No hay componentes asociados a esta dimensión para esta convocatoria.</em></p>
+            <% end %>
+          </section>
+
+        <% end %>
+      <% else %>
+        <p>No hay dimensiones asociadas.</p>
+      <% end %>
+
+      <div class="submit-container">
+        <%= link_to "Volver a las convocatorias", convocatorias_path, class: "siac_button" %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% content_for :header_tags do %>
+  <%= stylesheet_link_tag "siac.css", plugin: :utn_siac %>
+  <%= javascript_include_tag 'stepper_plantel_docente', plugin: :utn_siac %>
+
+  <style>
+      /* ------------------ Layout general ------------------ */
+
+      #content {
+          padding: 0;
+          margin-top: 0;
+      }
+
+      .convocatoria-layout {
+          display: flex;
+          align-items: stretch;
+          gap: 1.5rem;
+      }
+
+      .convocatoria-column {
+          flex: 1 1 auto;
+          min-width: 0;
+      }
+
+      /* ------------------ Sidebar de dimensiones ------------------ */
+
+      .dimensiones-column {
+          position: relative;
+          flex: 0 0 260px;
+          max-width: 260px;
+          background: #1f2840;
+          color: #e5ebff;
+          display: flex;
+          min-height: 100vh;
+      }
+
+      .dimensiones-panel.div_section {
+          background: transparent;
+          border: none;
+          box-shadow: none;
+      }
+
+      .dimensiones-panel {
+          padding: 1.4rem 1.2rem 2.6rem;
+          width: 100%;
+      }
+
+      .dimensiones-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          font-size: 1.05rem;
+          font-weight: 600;
+          margin-bottom: 0.85rem;
+      }
+
+      .dimensiones-title {
+          letter-spacing: 0.02em;
+      }
+
+      .dimensiones-nav {
+          margin-top: 0.5rem;
+      }
+
+      .dimensiones-list {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+      }
+
+      .dimensiones-item + .dimensiones-item {
+          margin-top: 0.3rem;
+      }
+
+      .dimensiones-link,
+      .dimensiones-link .dimensiones-name,
+      .dimensiones-link .dimensiones-index {
+          color: #ffffff !important;
+          font-weight: 600;
+          font-size: 1rem;
+          text-decoration: none;
+          display: flex;
+          align-items: baseline;
+          gap: 0.35rem;
+          padding: 0.45rem 0.55rem;
+          border-radius: 8px;
+      }
+
+      .dimensiones-link:hover {
+          background: rgba(255, 255, 255, 0.10);
+          color: #ffffff !important;
+      }
+
+      .dimensiones-link.is-active {
+          background: #0d7fe6;
+          color: #ffffff !important;
+      }
+
+      .dimensiones-name {
+          flex: 1;
+          line-height: 1.3;
+      }
+
+      .dimensiones-empty {
+          font-size: 0.9rem;
+          color: #c3cbe6;
+      }
+
+      /* ------------------ Botón de colapso ------------------ */
+
+      .dimensiones-collapse-toggle {
+          position: absolute;
+          right: 0;
+          width: 40px;
+          height: 40px;
+          border: none;
+          background: #1f2840;
+          color: #ffffff;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 6px 0 0 0;
+          box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
+          font-size: 22px;
+          padding: 0;
+          z-index: 2;
+      }
+
+      .dimensiones-collapse-toggle:hover {
+          background: #27335a;
+      }
+
+      /* ------------------ Estado colapsado ------------------ */
+
+      .dimensiones-column.is-collapsed {
+          max-width: 40px;
+          flex-basis: 40px;
+      }
+
+      .dimensiones-panel.is-hidden {
+          opacity: 0;
+          pointer-events: none;
+      }
+
+      /* ------------------ Detalles dimensiones (derecha) ------------------ */
+
+      .dimension-section {
+          scroll-margin-top: 16px; /* para que no quede pegado arriba */
+      }
+
+      .dimension-title {
+          margin-top: 0.75rem;
+          margin-bottom: 0.5rem;
+      }
+
+      .componentes-list,
+      .campos-list {
+          margin: 0.4rem 0 0.6rem 1.2rem;
+      }
+
+      .componente-item {
+          margin: 0.35rem 0;
+      }
+
+      .campos-empty {
+          margin-left: 1.2rem;
+          margin-top: 0.25rem;
+      }
+
+      .campo-item {
+          margin: 0.5rem 0;
+          padding: 0.5rem 0.75rem;
+          border-left: 3px solid #0d7fe6;
+          background: rgba(13, 127, 230, 0.04);
+          border-radius: 8px;
+      }
+
+      .campo-pregunta {
+          margin-bottom: 0.25rem;
+      }
+
+      .campo-descripcion {
+          font-size: 0.95rem;
+          color: #2f3a4a;
+          margin-bottom: 0.35rem;
+      }
+
+      .campo-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.35rem;
+      }
+
+      .badge {
+          font-size: 0.75rem;
+          padding: 0.15rem 0.45rem;
+          border-radius: 999px;
+          background: #eef2ff;
+          color: #27335a;
+      }
+
+      .badge-required {
+          background: #ffe8e8;
+          color: #8a1f1f;
+      }
+
+      .badge-inactive {
+          background: #f1f1f1;
+          color: #666;
+      }
+
+      /* ------------------ Responsive ------------------ */
+
+      @media (max-width: 900px) {
+          .convocatoria-layout {
+              flex-direction: column;
+          }
+
+          .dimensiones-column {
+              flex: none;
+              max-width: none;
+              width: 100%;
+              min-height: auto;
+          }
+      }
+
+      /* ================== NEW: mostrar sólo la dimensión seleccionada ================== */
+      .dimension-section { display: none; }
+      .dimension-section.is-visible { display: block; }
+
+      /* ================== NEW: tabs horizontales de componentes ================== */
+      .componentes-tabs {
+          display: flex;
+          gap: 0.6rem;
+          flex-wrap: nowrap;
+          overflow-x: auto;
+          padding: 0.35rem 0.2rem 0.6rem;
+          margin: 0.35rem 0 0.35rem;
+      }
+
+      .componente-tab {
+          border: none;
+          cursor: pointer;
+          padding: 0.55rem 0.95rem;
+          border-radius: 8px;
+          background: #6f7f90;
+          color: #fff;
+          font-weight: 600;
+          white-space: nowrap;
+          flex: 0 0 auto;
+      }
+
+      .componente-tab:hover { filter: brightness(1.05); }
+      .componente-tab.is-active { background: #2f4256; }
+
+      .componentes-content { margin-top: 0.25rem; }
+      .componente-section { display: none; }
+      .componente-section.is-visible { display: block; }
+
+      /* ================== NEW: INFORMACION / AUTOEVALUACION row ================== */
+      .subtabs {
+          display: flex;
+          gap: 0.6rem;
+          flex-wrap: nowrap;
+          overflow-x: auto;
+          padding: 0.15rem 0.2rem 0.6rem;
+          margin: 0 0 0.75rem;
+      }
+
+      .subtab {
+          border: none;
+          cursor: pointer;
+          padding: 0.55rem 1.05rem;
+          border-radius: 8px;
+          background: #c9c9c9;
+          color: #ffffff;
+          font-weight: 700;
+          letter-spacing: 0.03em;
+          white-space: nowrap;
+          flex: 0 0 auto;
+          text-transform: uppercase;
+      }
+
+      .subtab.is-active {
+          background: #2f4256;
+      }
+
+      .campos-group { display: none; }
+      .campos-group.is-visible { display: block; }
+  </style>
+
+  <script>
+      document.addEventListener("DOMContentLoaded", function () {
+          // --- Collapse sidebar ---
+          var column = document.querySelector(".dimensiones-column");
+          var panel = document.getElementById("dimensiones-panel");
+          var toggle = document.getElementById("dimensiones-collapse-toggle");
+
+          if (column && panel && toggle) {
+              function togglePanel() {
+                  var collapsed = column.classList.toggle("is-collapsed");
+                  panel.classList.toggle("is-hidden", collapsed);
+
+                  toggle.setAttribute("aria-expanded", String(!collapsed));
+                  toggle.textContent = collapsed ? "»" : "«";
+              }
+              toggle.addEventListener("click", togglePanel);
+          }
+
+          // --- Sidebar links: filter right panel by dimension ---
+          var links = Array.prototype.slice.call(
+              document.querySelectorAll('[data-dimension-link="true"]')
+          );
+
+          var sections = Array.prototype.slice.call(
+              document.querySelectorAll(".dimension-section")
+          );
+
+          function setActiveLink(linkEl) {
+              links.forEach(function (l) { l.classList.remove("is-active"); });
+              if (linkEl) linkEl.classList.add("is-active");
+          }
+
+          // --- Tabs de componentes dentro de una dimension ---
+          function bindComponentTabs(root) {
+              if (!root) return;
+
+              var tabs = Array.prototype.slice.call(root.querySelectorAll('[data-componente-tab="true"]'));
+              var blocks = Array.prototype.slice.call(root.querySelectorAll(".componente-section"));
+
+              if (!tabs.length || !blocks.length) return;
+
+              function activateTab(tabEl) {
+                  tabs.forEach(function (t) { t.classList.remove("is-active"); });
+                  tabEl.classList.add("is-active");
+
+                  var targetId = tabEl.getAttribute("data-target");
+                  blocks.forEach(function (b) {
+                      b.classList.toggle("is-visible", b.id === targetId);
+                  });
+
+                  // When component changes, ensure current mode is applied (info/auto)
+                  var visibleComp = root.querySelector(".componente-section.is-visible");
+                  if (visibleComp) applyModeToComponent(visibleComp, getCurrentMode(root));
+              }
+
+              tabs.forEach(function (t) {
+                  if (t.__boundClick) return;
+                  t.addEventListener("click", function () { activateTab(t); });
+                  t.__boundClick = true;
+              });
+
+              var active = root.querySelector(".componente-tab.is-active") || tabs[0];
+              if (active) activateTab(active);
+          }
+
+          // --- Subtabs: INFORMACION / AUTOEVALUACION (per dimension) ---
+          function getCurrentMode(root) {
+              var active = root.querySelector('[data-campos-tab="true"].is-active');
+              return active ? active.getAttribute("data-mode") : "info";
+          }
+
+          function setModeButtons(root, mode) {
+              var btns = Array.prototype.slice.call(root.querySelectorAll('[data-campos-tab="true"]'));
+              btns.forEach(function (b) {
+                  b.classList.toggle("is-active", b.getAttribute("data-mode") === mode);
+              });
+          }
+
+          function applyModeToComponent(compEl, mode) {
+              var groups = Array.prototype.slice.call(compEl.querySelectorAll("[data-campos-group]"));
+              groups.forEach(function (g) {
+                  g.classList.toggle("is-visible", g.getAttribute("data-campos-group") === mode);
+              });
+          }
+
+          function bindModeTabs(root) {
+              if (!root) return;
+
+              var btns = Array.prototype.slice.call(root.querySelectorAll('[data-campos-tab="true"]'));
+              if (!btns.length) return;
+
+              btns.forEach(function (b) {
+                  if (b.__boundClick) return;
+                  b.addEventListener("click", function () {
+                      var mode = b.getAttribute("data-mode") || "info";
+                      setModeButtons(root, mode);
+
+                      // Apply to currently visible component in this dimension
+                      var visibleComp = root.querySelector(".componente-section.is-visible");
+                      if (visibleComp) applyModeToComponent(visibleComp, mode);
+                  });
+                  b.__boundClick = true;
+              });
+
+              // Ensure default mode is applied
+              var mode = getCurrentMode(root);
+              setModeButtons(root, mode);
+              var visibleComp = root.querySelector(".componente-section.is-visible");
+              if (visibleComp) applyModeToComponent(visibleComp, mode);
+          }
+
+          function bindDimensionUI(dimEl) {
+              bindModeTabs(dimEl);
+              bindComponentTabs(dimEl);
+              // After both binds, ensure mode is applied to visible component
+              var visibleComp = dimEl.querySelector(".componente-section.is-visible");
+              if (visibleComp) applyModeToComponent(visibleComp, getCurrentMode(dimEl));
+          }
+
+          function showOnlySectionById(idWithoutHash) {
+              if (!idWithoutHash) return;
+
+              sections.forEach(function (s) {
+                  s.classList.toggle("is-visible", s.id === idWithoutHash);
+              });
+
+              var visibleDim = document.getElementById(idWithoutHash);
+              if (visibleDim) bindDimensionUI(visibleDim);
+
+              var newHash = "#" + idWithoutHash;
+              if (history && history.replaceState) {
+                  history.replaceState(null, "", newHash);
+              } else {
+                  window.location.hash = newHash;
+              }
+          }
+
+          // Click behavior (dimensions)
+          links.forEach(function (link) {
+              link.addEventListener("click", function (e) {
+                  e.preventDefault();
+                  var targetId = link.getAttribute("data-target") || (link.getAttribute("href") || "").replace("#", "");
+                  if (!targetId) return;
+
+                  setActiveLink(link);
+                  showOnlySectionById(targetId);
+              });
+          });
+
+          // On load: if URL has hash -> show it, else show first
+          if (window.location.hash) {
+              var id = window.location.hash.replace("#", "");
+              var active = document.querySelector('[data-dimension-link="true"][data-target="' + id + '"]');
+              if (active) setActiveLink(active);
+              showOnlySectionById(id);
+          } else {
+              var first = document.querySelector(".dimension-section.is-visible") || sections[0];
+              if (first) {
+                  var firstLink = document.querySelector('[data-dimension-link="true"][data-target="' + first.id + '"]');
+                  if (firstLink) setActiveLink(firstLink);
+                  showOnlySectionById(first.id);
+              }
+          }
+      });
+  </script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+      // ===============================
+      // MODAL DOCENTE (TU COMPONENTE)
+      // ===============================
+      window.openDocenteDialog = function (id) {
+        if (!window.$ || !$('#' + id).length) return;
+
+        $('#' + id).dialog({
+          modal: true,
+          width: '70%',
+          draggable: true,
+          resizable: false,
+          closeText: 'Cerrar'
+        });
+      };
+
+      // ===============================
+      // INPUT RANGE (SI EXISTE)
+      // ===============================
+      document.addEventListener("input", function (e) {
+        if (e.target.matches(".form-range")) {
+          const label = e.target.nextElementSibling;
+          if (label) label.textContent = `${e.target.value}%`;
+        }
+      });
+
+      // ===============================
+      // BARRA PROGRESO (SI EXISTE)
+      // ===============================
+      document.addEventListener("input", function (e) {
+        if (!e.target.matches(".tipo-campo-barra")) return;
+
+        const slider = e.target;
+        const value = slider.value;
+        const id = slider.id.split("_")[1];
+        const label = document.getElementById(`valor_progreso_${id}`);
+        if (!label) return;
+
+        label.textContent = `${value}%`;
+
+        const rootStyles = getComputedStyle(document.documentElement);
+        const hue = rootStyles.getPropertyValue("--hue");
+        const sat = rootStyles.getPropertyValue("--saturation");
+        const bri = rootStyles.getPropertyValue("--brightness20");
+
+        const color = `hsla(${hue}, ${sat}, ${bri}, 1)`;
+        slider.style.background =
+          `linear-gradient(to right, ${color} ${value}%, #d6d6d6 ${value}%)`;
+      });
+
+    });
+  </script>
+
+<% end %>

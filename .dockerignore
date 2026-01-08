@@ -1,0 +1,8 @@
+public/files/
+public/files-test/
+plugins/
+plugins_temp/
+
+# ¡No excluir los plugins ni sus vistas!
+!plugins-test/**/*
+!plugins-test/

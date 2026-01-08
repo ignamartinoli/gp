@@ -1,0 +1,1334 @@
+.div_section {
+    background-color: #d9d9d9;
+    border-radius: 2px;
+    margin-bottom: 20px;
+    margin-top: 5px;
+    padding: 15px;
+    box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.08),   /* sombra suave general */
+    0 2px 4px rgba(0, 0, 0, 0.04);    /* sombra corta para dar realismo */
+    border-radius: 12px;                /* borde redondeado como en la UI */
+    background: #fff;
+}
+
+.div_section fieldset {
+    border: none;
+}
+
+.siac_title{
+    letter-spacing: 0;
+    text-transform: none;
+    font-size: 25px;
+    font-weight: bolder;
+    color: black;
+    margin-bottom: 0%;
+    padding-bottom: 0%;
+}
+
+.div_section .form_row {
+    padding: 2%;
+    display: flex;
+}
+
+.div_section .form_column {
+    margin-left: 3%;
+    align-content: center;
+}
+
+.div_section hr {
+    background: #b4b5b6;
+    margin-top: 1%;
+    margin-bottom: 1%;
+}
+
+.div_section label {
+    color: black;
+    font-size: 15px;
+    font-weight: bold;
+    display: inline-block;
+    width: auto;
+    align-content: center;
+}
+
+.div_section input[type=text],input[type=date],input[type=number],input[type=checkbox] {
+    border-bottom: 1px solid black;
+    box-shadow: 0 0 1px 0 #b4b5b6;
+    border-radius: 5px;
+    display: inline-block;
+}
+
+.div_section input[type=checkbox] {
+    width: 19px;
+    height: 19px;
+    z-index: 0;
+    margin-right: 5%;
+}
+
+.table-wrapper {
+    max-height: 300px; /* Altura máxima para el contenedor */
+    overflow-y: auto;  /* Habilita el scroll vertical */
+    display: block;    /* Necesario para que el scroll solo afecte a tbody */
+    margin-top: 1%;
+}
+
+.table-wrapper thead th {
+    position: sticky; /* Mantiene el encabezado fijo */
+    top: 0;          /* Ubicación fija en la parte superior */
+    background-color: #f4f4f4; /* Fondo para diferenciar */
+    z-index: 1;      /* Asegura que el encabezado esté sobre el contenido */
+    border-bottom: 2px solid #b4b5b6;
+  }
+
+.custom-table {
+    margin: 1%;
+    width: 98%;
+    background-color: white;
+    font-size: 15px;
+    color: black;
+    text-align: center;
+    border-collapse: collapse; /* Evita que los bordes de las celdas se fusionen */
+    border-radius: 15px;
+}
+
+.custom-table th {
+    color:#525252;
+    font-size: 15px;
+    font-weight: bold;
+    padding: 1%;
+    border-bottom: 2px solid #b4b5b6;
+    background-color: #ebeaef;
+}
+
+/* Primer th -> esquina superior izquierda */
+.custom-table thead th:first-child {
+    border-top-left-radius: 15px;
+}
+
+/* Último th -> esquina superior derecha */
+.custom-table thead th:last-child {
+    border-top-right-radius: 15px;
+}
+.custom-table td {
+    padding: 1%;
+    border-bottom: 1.5px solid #b4b5b6;
+}
+
+.pagination_menu {
+    font-weight: bolder;
+    color: black;
+}
+
+.pagination_menu li {
+    display: inline;
+    padding: 1%;
+    text-align: center;
+}
+.pagination_menu li a {
+    text-align: center;
+    color: #b4b5b6;
+}
+
+.pagination_menu ul {
+    list-style-type: none;
+}
+
+.pagination_menu .active {
+    border-radius: 12px;
+    border: 1px solid #b4b5b6;
+}
+
+.pagination_menu .gap {
+    display: none;
+}
+
+.paginationTr td {
+    border-bottom:0
+}
+
+.convocatoria_bottom_menu {
+    width: 98%;
+    margin: 2% 1% 1% 1%;
+    display: flex;
+}
+
+.button_create {
+    border-radius: 12px;
+    border: 2px solid #b4b5b6;
+    text-decoration: none;
+    color: #b4b5b6;
+    font-size: 15px;
+    font-weight: bold;  
+    padding: 4%;
+    background-color: white;
+}
+
+.button_create:hover {
+    border: 2px solid white;
+    background-color: #b4b5b6;
+    text-decoration: none;
+    color: white;
+}
+
+.bm_col1 {
+    width: 84%;
+    display: flex;
+}
+
+.bm_col1_form {
+    display: flex !important;
+    align-items: center;
+    justify-content: end;
+    width: 100%;
+}
+
+.bm_col1 span {
+    margin-right: 2%;
+}
+
+.bm_col1 label {
+    width: 85%;
+    display: flex;
+    align-items: center;
+    justify-content: end;
+}
+
+.bm_col2 {
+    width: 16%;
+    display: flex;
+    justify-content: end;
+    align-items: center;
+}
+ .bm_col2 a {
+    color: #b4b5b6;
+ }
+
+.field {
+    display: flex;
+    align-items: center ;
+    padding: 1%;
+    padding-left: 3%;
+    width: 33%;
+}
+
+.long-field {
+    display: flex;
+    align-items: start;
+    padding: 1%;
+    padding-left: 3%;
+    width: 75%;
+}
+
+.field input, .long-field input {
+    margin-left: 7%;
+    width: 40%;
+}
+
+.field textarea,.long-field textarea {
+    width: 140vh; /* Ajusta el ancho según lo que necesites */
+    height: 25vh; /* Ajusta la altura según lo que necesites */
+    resize: none;
+}
+
+.field select,.long-field select, .long-field-2 select, .long-field-4 select, .lf4c3 select {
+    margin-left: 7%;
+    background-color: white;
+    width: 70%;
+
+    border-bottom: 1px solid black !important;
+    box-shadow: 0 0 1px 0 #b4b5b6 !important;
+    border-radius: 5px !important;
+    display: inline-block;
+}
+
+.field textarea {
+    margin-left: 7%;
+    background-color: white;
+
+    border-bottom: 1px solid black;
+    box-shadow: 0 0 1px 0 #b4b5b6;
+    border-radius: 5px;
+    display: inline-block;
+}
+
+.checkboxConvContainer, .checkboxConvContainerSedes, .checkboxConvContainerDimension {
+    display: inline-block;
+    align-items: center;
+    width: 75%;
+}
+
+.checkboxConvContainer span , 
+.checkboxConvContainerSedes span, 
+.checkboxConvContainerDimension span,
+.checkboxContainer span {
+    display: none !important;
+}
+
+.checkboxContainer {
+    margin-left: 5%;
+}
+
+.checkboxConvContainer input[type=checkbox], 
+.checkboxConvContainerSedes input[type=checkbox],
+.checkboxConvContainerDimension input[type=checkbox],
+.checkboxContainer input[type=checkbox] {
+    opacity: 1 !important;
+}
+
+
+.field-container {
+    width: 90%;
+    display: inline-flex;
+}
+
+.checkbox {
+    box-shadow: 0 0 2px 0 black;
+    border-radius: 5px;
+    display: inline-block;
+}
+
+.searchBarDiv {
+    border-radius: 25px;
+    border: 1px solid #b4b5b6;
+    background-color: white;
+    width: 25%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-left: 33%;
+}
+
+.searchBarDiv svg {
+    margin: 0 2px 0 2px;
+}
+
+.searchBarDiv div {
+    width: 15%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#searchBar {
+    background: none;
+    border: 0;
+    width: 85%;
+    border-bottom-left-radius: 25px;
+    border-top-left-radius: 25px;
+    box-shadow: none;
+    padding-left: 20px;
+}
+
+.searchBarContainer {
+    display: flex;
+    align-items: center;
+    align-content: center;
+    justify-content: end;
+    width: 98%;
+    margin: 1%;
+}
+
+.cerrada {
+    background-color: #d0d1d2;
+}
+
+.cerrada:hover {
+    background-color: #b4b5b6;
+}
+
+.action_bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.action_bar svg {
+    color: black;
+    width: 16px;
+    height: 16px;
+    margin-right: 3px;
+}
+
+.action_bar svg:hover {
+    color: #b4b5b6;
+}
+
+.action_bar a svg {
+    color: black;
+    width: 16px;
+    height: 16px;
+    margin-right: 3px;
+}
+
+.action_bar a svg:hover {
+    color: #b4b5b6;
+}
+
+.disabled path {
+    color: #b4b5b6; 
+}
+
+/* Estilo del tooltip */
+.tooltip {
+    position: relative;
+    display: inline-block;
+    z-index: 10; /* Asegura que el tooltip esté por encima de otros elementos */
+    align-content: center;
+  }
+
+.field .tooltip ,.long-field .tooltip {
+    padding-left: 5%;
+}
+  
+  /* Estilo del texto del tooltip */
+  .tooltip .tooltiptext {
+    visibility: hidden;
+    width: 150px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 5px;
+    padding: 5px;
+    position: absolute;
+    z-index: 20; /* Asegura que el texto del tooltip esté por encima */
+    bottom: 125%; /* Posiciona el tooltip arriba del elemento */
+    left: 50%;
+    margin-left: -75px; /* Ajusta la posición para centrarlo */
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  
+  /* Mostrar el tooltip al pasar el mouse */
+  .tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+  }
+  
+  /* Si el contenedor de la tabla tiene 'overflow: hidden', cambia esto */
+  .table {
+    overflow: visible !important; /* Esto permite que el tooltip se muestre fuera del contenedor */
+  }
+  
+  #search-results {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    background-color: white;
+    width: 100%;
+    position: absolute;
+    z-index: 1000;
+  }
+  
+  #search-results li {
+    padding: 8px;
+    cursor: pointer;
+  }
+  
+  #search-results li:hover {
+    background-color: #f0f0f0;
+  }
+  
+
+  .scroll-table {
+    overflow-y: auto;
+  }
+
+  .create_Conv label {
+    font-weight: 200;
+  }
+
+  .submit-container {
+    width: 100%;
+    display: flex;
+    justify-content: end;
+  }
+
+  .submit {
+    background-color: green;
+    color: white;
+    border: none;
+    border-radius: 10px;
+  }
+
+  .thDesc {
+    width: 60%;
+  }
+
+  
+  .error-container {
+    width: 90%;
+    display: inline-flex;
+    margin-bottom: 3%;
+  }
+
+.nested-fields .error-container .errorCampo {
+    display: block;
+}
+
+  .error-container div {
+    display: flex;
+    padding: 1%;
+    padding-left: 3%;
+    width: 33%;
+    font-weight: bolder;
+    color: red
+}
+  
+  .input-error {
+    border: 1px solid red;
+    background-color: #ffe6e6;
+  }
+  
+  .error-message {
+    margin: 5px 0;
+  }
+  
+
+.buttonera_index {
+    width: 90%;
+    margin-left: 5%;
+    display: inline-flex;
+    justify-content: start;
+}
+
+.buttonera_index a {
+    color: white;
+}
+.button_index {
+    width: 45%;
+
+    font-size: 18px;
+    font-weight: bolder;
+    text-decoration: none;
+    color: white;
+    text-align: center;
+
+    border: 2px solid white;
+    border-radius: 12px;
+    background-color: #b4b5b6;
+    
+    padding: 6px;
+}
+
+.button_index:hover {
+    text-decoration: underline;
+}
+
+.nested-fields .field {
+    width: 100%;
+}
+
+.nested-fields .field input{
+    width: 75%;
+}
+
+.nested-fields .field input[type=checkbox]{
+    width: 5%;
+}
+
+.remove_fields:visited {
+    color: white;
+    font-weight: bolder;
+}
+
+.siac_button {
+    background: hsla(var(--header_hue),var(--header_saturation), var(--header_brightness10),1) !important;
+    color: #fff !important;
+    background: transparent;
+    border-radius: 2px;
+    border: 2px solid hsla(var(--header_hue),var(--header_saturation), var(--header_brightness10),1);
+    color: #fff !important;
+    padding: 13px 20px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 9px;
+    float: left;
+    cursor: pointer;
+    font-weight: 700;
+    text-decoration: none;
+    margin-left: 20px;
+}
+
+.siac_button:hover {
+    background: transparent !important;
+    border-radius: 3px;
+    border: 2px solid hsla(var(--header_hue),var(--header_saturation), var(--header_brightness10),1) !important;
+    color: hsla(var(--header_hue),var(--header_saturation), var(--header_brightness10),1) !important;
+    padding: 13px 20px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 9px;
+    float: left;
+    cursor: pointer;
+    font-weight: 700;
+    text-decoration: none;
+    margin-left: 20px;
+}
+
+.add_field:visited {
+    color: white;
+    font-weight: bolder;
+}
+
+.new_componente { width: 100%;}
+
+.long-field-4 { width: 100%; display: flex; margin-bottom: 2%;}
+
+.lf4c1 { width: 20%; display: flex; align-items: center; justify-content: left; padding-left: 2%;}
+.lf4c2 { width:  5%; display: flex; align-items: center; justify-content: center;}
+.lf4c3 { width: 45%; display: flex; align-items: center; justify-content: center;}
+.lf4c4 { width: 30%; display: flex; align-items: center; justify-content: left; padding-left: 2%;}
+
+.lf4c3 input[type=text] { width: 95%; margin-left: 5%;}
+.lf4c3 select { width: 95%; margin-left: 5%;}
+.lf4c3 textarea { margin-left: 7%; background-color: white; border-bottom: 1px solid black; 
+    box-shadow: 0 0 1px 0 #b4b5b6; border-radius: 5px; display: inline-block;
+    width: 140vh; /* Ajusta el ancho según lo que necesites */
+    height: 25vh; /* Ajusta la altura según lo que necesites */
+    resize: none;}
+.lf4c4 p { color: red; }
+
+.long-field-2 { width: 100%; display: flex; margin-bottom: 2%;}
+
+.lf2c1 { width: 30%; display: flex; align-items: center; justify-content: left; padding-left: 2%;}
+.lf2c2 { width:  5%; display: flex; align-items: center; justify-content: center;}
+
+.buttonera-1-c { width: 40%; margin: 1% 30% 1%; display: flex; align-items: center; justify-content: center;}
+.buttonera-2-c { width: 60%; margin: 1% 20% 1%; display: flex; align-items: center; justify-content: center;}
+
+.b2cb1 { display: flex; justify-items: center; align-items: center; }
+.b2cb2 { display: flex; justify-items: center; align-items: center; }
+
+.fs-subcampo { border: 1px solid black !important; ;
+    }
+
+.fs-container {display:block ; padding-top: 1%;}
+
+#mostrar_cerradas {
+    display: none !important;
+}
+
+
+
+/*GENERACION DE FORMULARIO*/
+
+.campo-contenedor {
+    padding: 2% 3%;
+    display: block;
+}
+
+.campo-pregunta {
+    margin-bottom: 1%;
+}
+
+.campo-orientadora {
+    margin-bottom: 2%;
+    margin-left: 2%;
+    text-align: left;
+    font-size: 15px;
+}
+
+.campo-adjunto {
+    margin-left: 2%;
+}
+
+.tipo-campo-texto {
+    resize: none;               /* 🚫 No permitir redimensionar */
+    height: 180px;              /* 📏 Alto fijo — aprox. 2000 caracteres en párrafos normales */
+    line-height: 1.4;           /* Mejor legibilidad */
+    font-size: 14px;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    padding: 10px 12px;
+    background-color: #fff;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    width: 98%;
+    margin-left: 2%;
+    margin-bottom: 1%;
+}
+
+.tipo-campo-multiple {
+    margin-left: 2%;
+}
+
+.tipo-campo-multiple-op {
+    width: 85% !important;
+    margin: 2% 0 auto;
+}
+
+.contenedor-subcampos {
+    margin-left: 2%;
+}
+
+.tipo-campo-unica {
+    margin-left: 2%;
+    margin-bottom: 1%;
+}
+
+.tipo-campo-select {
+    width: 75%;
+    font-size: 20px;
+}
+
+.tipo-campo-select option {
+    width: 100%;
+}
+
+.tipo-campo-barra {
+  -webkit-appearance: none;
+  width: 92% !important;
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(
+    to right,
+    hsla(var(--hue), var(--saturation), var(--brightness20), 1) 50%,  /* color activo */
+    #d6d6d6 50%                                                      /* color inactivo */
+  );
+  outline: none;
+  transition: background 0.3s ease;
+  border:1px solid black;
+  margin-right: 5%;
+}
+
+.tipo-campo-barra::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: hsla(var(--hue), var(--saturation), var(--brightness20), 1);
+  border: 3px solid #fff;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.tipo-campo-barra:hover::-webkit-slider-thumb {
+  transform: scale(1.1);
+}
+
+.campo-progreso {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 15px;
+  margin-bottom: 1%;
+  width: 100%;
+}
+
+.campo-texto {
+    width: 100%;
+}
+.slider-wrapper {
+  width: 100%; 
+  display: flex;
+  margin-left: 2%;
+}
+
+.tipo-campo-barra-label {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: hsla(var(--hue), var(--saturation), var(--brightness20), 1);
+  min-width: 70px;
+  text-align: left;
+}
+
+
+.stepper {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 0px;
+  list-style: none;
+  padding: 0;
+  border-bottom: 2px solid grey;
+}
+
+.step {
+  padding: 8px 12px;
+  background: #ddd;
+  border-radius: 5px;
+  width: 15%;
+  text-align: center;
+  border-bottom-left-radius: 0px;
+  border-bottom-right-radius: 0px;
+  font-size: 15px;
+  color: white;
+  font-weight: 1000;
+  background: hsla(var(--hue),var(--saturation),var(--brightness15),1);
+}
+
+.step.active {
+  background-color: hsla(var(--header_hue),var(--header_saturation),var(--header_brightness),1);
+  color: #fff;
+  font-weight: bold;
+  font-weight: 1000;
+}
+
+.step-content {
+  animation: fade .3s ease-in-out; 
+  padding: 2%;
+}
+
+@keyframes fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Contenedor para que se posicionen abajo a la derecha */
+.step-buttons {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+/* Botón base */
+.step-btn {
+    background: hsla(var(--header_hue),var(--header_saturation), var(--header_brightness10),1);
+    border-radius: 2px;
+    border: 2px solid hsla(var(--header_hue),var(--header_saturation), var(--header_brightness10),1);
+    color: #fff;
+    padding: 12px 26px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 11px;
+    cursor: pointer;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease-in-out;
+}
+
+/* Hover */
+.step-btn:hover {
+    background: transparent;
+    color: hsla(var(--header_hue),var(--header_saturation), var(--header_brightness10),1);
+}
+
+/* Botón deshabilitado (por si lo necesitás) */
+.step-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+
+/* estilo base: forma pill */
+.estado-etapa {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: capitalize;
+  text-align: center;
+}
+
+/* 🟢 Nueva – igual al estilo de tu screenshot */
+.estado-etapa.nueva {
+  background-color: #D4F7D4;  /* Suave verde claro */
+  color: #1E8A41;             /* Verde fuerte */
+  border: 1px solid #BEEFC2;  /* Opcional: más similar aún al diseño */
+}
+
+/* 🔴 Cerrada */
+.estado-etapa.cerrada {
+  background-color: #F8D6D6;  /* Suave rojo claro */
+  color: #B82A2A;             /* Rojo fuerte */
+  border: 1px solid #E9B8B8;  /* Opcional */
+}
+
+.dimension-chip {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 18px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Curricular */
+.chip-curricular {
+  background-color: #E3F2FD;
+  color: #1565C0;
+}
+
+/* Actividad Docente */
+.chip-docente {
+  background-color: #E8F5E9;
+  color: #2E7D32;
+}
+
+/* Organizacional */
+.chip-organizacional {
+  background-color: #FFF3E0;
+  color: #EF6C00;
+}
+
+/* Actividad Estudiantil */
+.chip-estudiantil {
+  background-color: #F3E5F5;
+  color: #7B1FA2;
+}
+
+/* Desarollo Academico */
+.chip-academico {
+  background-color: #FFF8E1; /* dorado muy claro, tipo pergamino */
+  color: #B28704;           /* dorado oscuro, legible y elegante */
+}
+
+
+.btn-volver {
+  display: inline-block;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1E3A8A; /* azul institucional */
+  margin-bottom: 8px;
+  margin-top: 8px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.btn-volver:hover {
+  color: #162f6b;
+  text-decoration: underline;
+}
+
+.btn-volver:before {
+  content: "";
+}
+
+.header-row {
+    width: 98%;
+    margin: 1% auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+
+/*Plantel docente*/ 
+
+/* Contenedor general de docentes */
+.docentes-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;                 /* 👈 separación real */
+  padding: 6px 0 6px 10px;   /* leve tabulación */
+}
+
+/* Estado vacío */
+.docentes-empty {
+  font-style: italic;
+  color: #6c757d;
+  font-size: 14px;
+}
+
+/* Botón agregar */
+.btn-agregar-docente {
+  font-size: 14px;
+  font-weight: bold;
+  color: #6f42c1;
+  text-decoration: none;
+  padding-left: 2px;
+}
+
+/* Lista de docentes (cuando exista) */
+.docentes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+/* Cada docente */
+.docente-item {
+  padding-left: 14px;
+  position: relative;
+  font-size: 0.9rem;
+}
+
+.docente-item::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #6f42c1;
+  font-weight: bold;
+}
+
+
+.btn-agregar-docente::before {
+  content: "+ ";
+  font-weight: bold;
+}
+
+.btn-agregar-docente:hover {
+  text-decoration: underline;
+}
+
+#modal_docente_381 fieldset.box {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 15px 20px;
+  margin-bottom: 18px;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.06),
+    0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+/* Separación clara entre bloques del modal */
+#modal_docente_381 fieldset.box {
+  margin-bottom: 24px;   /* ⬅️ más aire */
+  padding: 20px 24px;    /* ⬅️ más respiración interna */
+}
+
+
+#modal_docente_381 legend {
+  font-size: 16px;
+  font-weight: 800;
+  color: #3f3f3f;
+  margin-bottom: 16px;   /* ⬅️ separa título del contenido */
+  padding: 0 10px;
+  background: white;
+  padding: 10px;
+  border-radius: 12px;
+  
+}
+
+#modal_docente_381 .d-flex.gap-2 {
+  align-items: center;
+}
+
+#modal_docente_381 .d-flex.gap-2 input {
+  width: 240px;
+}
+
+#modal_docente_381 input[type=text],
+#modal_docente_381 select {
+  border-bottom: 1px solid black;
+  box-shadow: 0 0 1px 0 #b4b5b6;
+  border-radius: 6px;
+}
+
+#modal_docente_381 .mt-3.text-end {
+  margin-top: 25px !important;
+  padding-top: 15px;
+  border-top: 1px solid #b4b5b6;
+}
+
+#modal_docente_381 .mt-3.text-end button {
+  margin-left: 10px;
+}
+#modal_docente_381 .form-control,
+#modal_docente_381 .form-select {
+  margin-right: 14px;
+}
+
+/* evita que el último quede desalineado */
+#modal_docente_381 .form-control:last-child,
+#modal_docente_381 .form-select:last-child {
+  margin-right: 0;
+}
+#modal_docente_381 .d-flex.gap-2 {
+  gap: 16px !important;
+  margin-top: 6px;
+}
+
+#modal_docente_381 .d-flex.gap-2 input[type=text] {
+  width: 300px;          /* ⬅️ más ancho */
+  font-size: 15px;
+}
+
+#modal_docente_381 .d-flex.gap-2 button {
+  padding: 6px 18px;
+  font-weight: bold;
+}
+#modal_docente_381 fieldset.box > * {
+  margin-bottom: 12px;
+}
+
+#modal_docente_381 fieldset.box > *:last-child {
+  margin-bottom: 0;
+}
+#modal_docente_381 .mt-3.text-end {
+  margin-top: 30px !important;
+  padding-top: 18px;
+  border-top: 1px solid #b4b5b6;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+#modal_docente_381 .stepper {
+  margin-bottom: 20px;
+}
+
+#modal_docente_381 .step-content {
+  min-height: 220px; /* evita saltos visuales */
+}
+#modal_docente_381 .step-buttons {
+  margin-top: 20px;
+}
+
+.step-content {
+  display: none;
+}
+
+.step-content.active {
+  display: block;
+}
+
+.siac_modal_title {
+    text-align: center;
+}
+
+/* Título del dialog (header de Redmine) */
+.ui-dialog .ui-dialog-title {
+  font-size: 18px;        /* ⬆️ más grande */
+  font-weight: 700;
+  text-align: center;     /* ⬅️ centrado */
+  width: 100%;            /* necesario para centrar */
+  margin: 4px 0;          /* aire vertical */
+}
+.desempeno-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.desempeno-row .form-select {
+  width: 260px;
+}
+
+.desempeno-row .cargo-select {
+  width: 420px; /* 👈 ancho fijo que pedías */
+}
+
+
+
+#docente_cuit , #empresa_cuit{
+  margin: 16px;
+  width: 35%;
+  font-size: 24px;
+}
+
+#docente-no-encontrado {
+  font-size: 18px;
+  padding: 12px;
+  font-weight: bolder;
+}
+
+/* rojo cuando falla */
+#docente-no-encontrado.is-error {
+  color: red;
+}
+
+/* verde cuando ok */
+#docente-no-encontrado.is-ok {
+  color: green;
+}
+#docente_titulacion {
+  width: 20%;
+}
+
+#docente_apellido, #docente_nombre {
+  width: 30%;
+  margin: 16px;
+}
+
+
+.siac_button_secondary {
+  background: transparent;
+  border: 2px solid hsla(var(--header_hue),var(--header_saturation), var(--header_brightness10),1) !important;
+  color: hsla(var(--header_hue),var(--header_saturation), var(--header_brightness10),1) !important;
+  padding: 12px 24px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.siac_button_secondary:hover {
+  border-color: white;
+  background: hsla(var(--header_hue),var(--header_saturation), var(--header_brightness10),1) !important;
+  color: white !important;
+}
+
+
+/* ===============================
+   INVESTIGACIÓN – Layout lindo
+   =============================== */
+
+#investigacion-step {
+  background: #f2f4fa;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+#investigacion-step legend {
+  font-weight: 700;
+  font-size: 1.1rem;
+  padding: 0 0.5rem;
+}
+
+/* Contenedor de proyectos */
+.proyectos-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Tarjeta de proyecto */
+.proyecto-investigacion {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 1rem 1.2rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.75rem;
+}
+
+/* Nombre ocupa toda la fila */
+.proyecto-investigacion input[type="text"] {
+  grid-column: 1 / -1;
+}
+
+/* Cargo investigación */
+.proyecto-investigacion select[name*="id_cargo_investigacion"] {
+  grid-column: span 2;
+}
+
+/* Tipo encuadre */
+.proyecto-investigacion .tipo-encuadre-select {
+  grid-column: span 2;
+}
+
+/* Grupo / Centro */
+.proyecto-investigacion .grupo-centro-select {
+  grid-column: span 2;
+}
+
+/* Línea */
+.proyecto-investigacion select[name*="linea_accion"] {
+  grid-column: span 4;
+}
+
+/* Horas */
+.proyecto-investigacion input[type="number"] {
+  grid-column: span 2;
+}
+
+/* Botón agregar */
+#agregar-proyecto-investigacion {
+  align-self: flex-start;
+  margin-top: 20px;
+  margin-left: 40%;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .proyecto-investigacion {
+    grid-template-columns: 1fr;
+  }
+
+  .proyecto-investigacion > * {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+.desempeno-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+@media (max-width: 900px) {
+  .desempeno-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===============================
+   STEP: DATOS LABORALES
+=============================== */
+
+.datos-laborales-step {
+  background: #f6f8fc;
+  border-radius: 12px;
+}
+
+/* Fila CUIT + botón */
+.empresa-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.empresa-cuit {
+  flex: 1 1 auto;
+}
+
+/* Botón */
+.consultar-empresa-btn {
+  white-space: nowrap;
+  height: 38px;
+}
+
+/* Razón social */
+.empresa-razon-social {
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-weight: 600;
+  color: #334155;
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+}
+
+/* Estado cargado */
+.empresa-razon-social.loaded {
+  border-color: #22c55e;
+  background: #ecfdf5;
+  color: #065f46;
+}
+
+/* ===============================
+   Datos personales – estilos
+   =============================== */
+
+.datos-personales-step .form-label {
+  margin-bottom: 0.25rem;
+}
+
+.datos-personales-step .form-text {
+  font-size: 0.85rem;
+}
+
+.datos-personales-step .form-control,
+.datos-personales-step .form-select {
+  max-width: 420px;
+}
+
+/* Error visual (para validaciones JS) */
+.datos-personales-step .is-invalid {
+  border-color: #dc3545;
+}
+
+.datos-personales-step .invalid-feedback {
+  display: block;
+  font-size: 0.85rem;
+  color: #dc3545;
+  margin-top: 0.25rem;
+}
+
+.datos-personales-step div {
+  margin-bottom: 20px;
+}
+
+.datos-personales-step div label {
+  margin-right: 20px;
+}
