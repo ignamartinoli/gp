@@ -18,6 +18,7 @@ gem 'deface', '1.5.3'
 gem 'gemoji', '~> 3.0.0'
 gem 'invisible_captcha'
 gem 'prawn'
+gem 'prawn-table', '~> 0.2.2'
 gem 'pg', '~> 1.1.4'
 gem 'ruby-filemagic', require: 'filemagic'
 
