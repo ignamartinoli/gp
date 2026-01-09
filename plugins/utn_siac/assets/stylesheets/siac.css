@@ -865,8 +865,8 @@
 
 /* Actividad Estudiantil */
 .chip-estudiantil {
-  background-color: #F3E5F5;
-  color: #7B1FA2;
+   background-color: #FDECEA; /* rojo muy claro, suave y limpio */
+   color: #C62828;  
 }
 
 /* Desarollo Academico */
