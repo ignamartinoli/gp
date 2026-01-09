@@ -512,6 +512,18 @@
               if (t.__boundClick) return;
               t.addEventListener("click", function () { activateTab(t); });
               t.__boundClick = true;
+              t.addEventListener("click", function () {
+                // Guardar el componente activo por dimensión
+                var dimEl = t.closest(".dimension-section");
+                if (dimEl) {
+                  var dimId = getDimIdFromElement(dimEl);
+                  if (dimId) {
+                    sessionStorage.setItem(storageKeyForComponent(dimId), t.getAttribute("data-target"));
+                  }
+                }
+
+                activateTab(t);
+              });
           });
 
           var active = root.querySelector(".componente-tab.is-active") || tabs[0];
@@ -565,20 +577,49 @@
       }
 
       function bindDimensionUI(dimEl) {
-        bindModeTabs(dimEl);
-        bindComponentTabs(dimEl);
-        var visibleComp = dimEl.querySelector(".componente-section.is-visible");
-        if (visibleComp) applyModeToComponent(visibleComp, getCurrentMode(dimEl));
+              bindModeTabs(dimEl);
+              bindComponentTabs(dimEl);
+
+              restoreActiveComponent(dimEl);
+
+              var visibleComp = dimEl.querySelector(".componente-section.is-visible");
+              if (visibleComp) applyModeToComponent(visibleComp, getCurrentMode(dimEl));
+            }
+
+            function patchPaginationLinks() {
+              var hash = window.location.hash;
+              if (!hash) return;
+
+              document.querySelectorAll(".pagination a[href]").forEach(function (a) {
+                a.href = a.href.split("#")[0] + hash; // reemplaza siempre por el hash actual
+              });
+            }
+
+            function storageKeyForComponent(dimId) {
+        return "active_component_for_" + dimId;
       }
 
-      function patchPaginationLinks() {
-        var hash = window.location.hash;
-        if (!hash) return;
-
-        document.querySelectorAll(".pagination a[href]").forEach(function (a) {
-          a.href = a.href.split("#")[0] + hash; // reemplaza siempre por el hash actual
-        });
+      function getDimIdFromElement(dimEl) {
+        // dimEl.id = "dimension-2"
+        return (dimEl && dimEl.id) ? dimEl.id.replace("dimension-", "") : null;
       }
+
+      function restoreActiveComponent(dimEl) {
+        if (!dimEl) return;
+
+        var dimId = getDimIdFromElement(dimEl);
+        if (!dimId) return;
+
+        var savedTarget = sessionStorage.getItem(storageKeyForComponent(dimId));
+        if (!savedTarget) return;
+
+        // Buscar el tab cuyo data-target coincide con lo guardado
+        var tab = dimEl.querySelector('[data-componente-tab="true"][data-target="' + savedTarget + '"]');
+        if (tab) {
+          tab.click(); // reutiliza tu lógica activateTab y deja todo consistente
+        }
+      }
+
 
       function showOnlySectionById(idWithoutHash) {
         if (!idWithoutHash) return;
@@ -685,103 +726,103 @@
           selectDestino.appendChild(opt);
         });
       });
-*/
-      document.addEventListener("DOMContentLoaded", function () {
-          // --- Collapse sidebar ---
-          var column = document.querySelector(".dimensiones-column");
-          var panel = document.getElementById("dimensiones-panel");
-          var toggle = document.getElementById("dimensiones-collapse-toggle");
+  */
+        document.addEventListener("DOMContentLoaded", function () {
+            // --- Collapse sidebar ---
+            var column = document.querySelector(".dimensiones-column");
+            var panel = document.getElementById("dimensiones-panel");
+            var toggle = document.getElementById("dimensiones-collapse-toggle");
 
-          if (column && panel && toggle) {
-              function togglePanel() {
-                  var collapsed = column.classList.toggle("is-collapsed");
-                  panel.classList.toggle("is-hidden", collapsed);
+            if (column && panel && toggle) {
+                function togglePanel() {
+                    var collapsed = column.classList.toggle("is-collapsed");
+                    panel.classList.toggle("is-hidden", collapsed);
 
-                  toggle.setAttribute("aria-expanded", String(!collapsed));
-                  toggle.textContent = collapsed ? "»" : "«";
-              }
+                    toggle.setAttribute("aria-expanded", String(!collapsed));
+                    toggle.textContent = collapsed ? "»" : "«";
+                }
 
-              toggle.addEventListener("click", togglePanel);
-          }
+                toggle.addEventListener("click", togglePanel);
+            }
 
-          // --- Sidebar links: smooth scroll + active class + update hash ---
-          var links = Array.prototype.slice.call(
-              document.querySelectorAll('[data-dimension-link="true"]')
-          );
+            // --- Sidebar links: smooth scroll + active class + update hash ---
+            var links = Array.prototype.slice.call(
+                document.querySelectorAll('[data-dimension-link="true"]')
+            );
 
-          function setActiveLinkByHash(hash) {
-              if (!hash) return;
-              links.forEach(function (l) {
-                  l.classList.remove("is-active");
-              });
-              var active = document.querySelector('[data-dimension-link="true"][href="' + hash + '"]');
-              if (active) active.classList.add("is-active");
-          }
+            function setActiveLinkByHash(hash) {
+                if (!hash) return;
+                links.forEach(function (l) {
+                    l.classList.remove("is-active");
+                });
+                var active = document.querySelector('[data-dimension-link="true"][href="' + hash + '"]');
+                if (active) active.classList.add("is-active");
+            }
 
-          function scrollToHash(hash) {
-              if (!hash) return;
-              var target = document.querySelector(hash);
-              if (target) target.scrollIntoView({behavior: "smooth", block: "start"});
-          }
+            function scrollToHash(hash) {
+                if (!hash) return;
+                var target = document.querySelector(hash);
+                if (target) target.scrollIntoView({behavior: "smooth", block: "start"});
+            }
 
-          // Click behavior
-          links.forEach(function (link) {
-              link.addEventListener("click", function (e) {
-                  e.preventDefault();
+            // Click behavior
+            links.forEach(function (link) {
+                link.addEventListener("click", function (e) {
+                    e.preventDefault();
 
-                  var targetHash = link.getAttribute("href");
-                  setActiveLinkByHash(targetHash);
-                  scrollToHash(targetHash);
+                    var targetHash = link.getAttribute("href");
+                    setActiveLinkByHash(targetHash);
+                    scrollToHash(targetHash);
 
-                  // Update URL hash without jump
-                  if (history && history.replaceState) {
-                      history.replaceState(null, "", targetHash);
-                  } else {
-                      window.location.hash = targetHash;
-                  }
-              });
-          });
+                    // Update URL hash without jump
+                    if (history && history.replaceState) {
+                        history.replaceState(null, "", targetHash);
+                    } else {
+                        window.location.hash = targetHash;
+                    }
+                });
+            });
 
-          // On load: if URL already has a hash, activate it and scroll to it
-          if (window.location.hash) {
-              setActiveLinkByHash(window.location.hash);
-              // Small timeout so layout is fully painted before scrolling
-              setTimeout(function () {
-                  scrollToHash(window.location.hash);
-              }, 50);
-          }
+            // On load: if URL already has a hash, activate it and scroll to it
+            if (window.location.hash) {
+                setActiveLinkByHash(window.location.hash);
+                // Small timeout so layout is fully painted before scrolling
+                setTimeout(function () {
+                    scrollToHash(window.location.hash);
+                }, 50);
+            }
 
-          // Optional: highlight active link based on scroll position (IntersectionObserver)
-          var sections = Array.prototype.slice.call(document.querySelectorAll(".dimension-section"));
-          if ("IntersectionObserver" in window && sections.length) {
-              var observer = new IntersectionObserver(
-                  function (entries) {
-                      // Pick the most visible section
-                      var visible = entries
-                          .filter(function (e) {
-                              return e.isIntersecting;
-                          })
-                          .sort(function (a, b) {
-                              return b.intersectionRatio - a.intersectionRatio;
-                          })[0];
+            // Optional: highlight active link based on scroll position (IntersectionObserver)
+            var sections = Array.prototype.slice.call(document.querySelectorAll(".dimension-section"));
+            if ("IntersectionObserver" in window && sections.length) {
+                var observer = new IntersectionObserver(
+                    function (entries) {
+                        // Pick the most visible section
+                        var visible = entries
+                            .filter(function (e) {
+                                return e.isIntersecting;
+                            })
+                            .sort(function (a, b) {
+                                return b.intersectionRatio - a.intersectionRatio;
+                            })[0];
 
-                      if (visible && visible.target && visible.target.id) {
-                          setActiveLinkByHash("#" + visible.target.id);
-                          if (history && history.replaceState) {
-                              history.replaceState(null, "", "#" + visible.target.id);
-                          }
-                      }
-                  },
-                  {root: null, threshold: [0.2, 0.35, 0.5, 0.75]}
-              );
+                        if (visible && visible.target && visible.target.id) {
+                            setActiveLinkByHash("#" + visible.target.id);
+                            if (history && history.replaceState) {
+                                history.replaceState(null, "", "#" + visible.target.id);
+                            }
+                        }
+                    },
+                    {root: null, threshold: [0.2, 0.35, 0.5, 0.75]}
+                );
 
-              sections.forEach(function (s) {
-                  observer.observe(s);
-              });
-          }
-      });
+                sections.forEach(function (s) {
+                    observer.observe(s);
+                });
+            }
+        });
 
-*/
+  */
       document.addEventListener('click', function (e) {
         if (!e.target.matches('.siac_button_secondary')) return;
 
