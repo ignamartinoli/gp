@@ -1,4 +1,4 @@
-FROM ruby:2.5.3
+FROM ruby:2.5.9-buster
 
 # 🧱 Fix repos antiguos de Debian Stretch
 RUN sed -i 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list && \
@@ -11,6 +11,7 @@ RUN sed -i 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list && \
   nodejs \
   git \
   libffi-dev \
+  libpq-dev \
   libyaml-dev \
   libmagic-dev \
   file \

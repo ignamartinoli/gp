@@ -5,6 +5,13 @@
 # Contributors: @borjacampina @jgutierrezvega
 
 es:
+  views:
+    pagination:
+      first: "Primera"
+      previous: "Anterior"
+      next: "Siguiente"
+      last: "Última"
+
   kaminari:
     first: "Primera"
     previous: "Anterior"

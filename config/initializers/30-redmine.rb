@@ -1,7 +1,9 @@
-I18n.default_locale = 'en'
+I18n.load_path += Dir[Rails.root.join('config', 'locales', '**', '*.{rb,yml}').to_s]
+
 I18n.backend = Redmine::I18n::Backend.new
-# Forces I18n to load available locales from the backend
 I18n.config.available_locales = nil
+
+I18n.default_locale = :es  # or 'es'
 
 require 'redmine'
 

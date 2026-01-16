@@ -13,10 +13,10 @@ services:
       REDMINE_DB_USERNAME: root
       REDMINE_DB_PASSWORD: root
     volumes:
-      - ./public/files-test:/usr/src/redmine/files
+      - ./public/files-test:/app/files
       - ./plugins-test:/app/plugins
-      - ./themes:/usr/src/redmine/public/themes
-      - ./config/database.yml:/usr/src/redmine/config/database.yml
+      - ./public/themes:/app/public/themes
+      - ./config/database.yml:/app/config/database.yml
     ports:
       - "3001:3000"
 

@@ -11,10 +11,10 @@ services:
       REDMINE_DB_USERNAME: root
       REDMINE_DB_PASSWORD: root
     volumes:
-      - ./public/files-test:/usr/src/redmine/files
+      - ./public/files-test:/app/files
       - ./plugins:/app/plugins
-      - ./themes:/usr/src/redmine/public/themes
-      - ./config/database.yml:/usr/src/redmine/config/database.yml
+      - ./public/themes:/app/public/themes
+      - ./config/database.yml:/app/config/database.yml
     ports:
       - "3001:3000"
     depends_on:
@@ -33,5 +33,20 @@ services:
     ports:
       - "3307:3306"
 
+  postgres:
+    image: postgres:16
+    container_name: gp-postgres
+    environment:
+      POSTGRES_DB: pruebaG
+      POSTGRES_USER: gp
+      POSTGRES_PASSWORD: "p455w0rd"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./00_create_postgres_role.sql:/docker-entrypoint-initdb.d/00_create_postgres_role.sql:ro
+      - ./dump.sql:/docker-entrypoint-initdb.d/01_dump.sql:ro
+    ports:
+      - "5433:5432"
+
 volumes:
   db_data:
+  pg_data:
