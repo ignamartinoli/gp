@@ -1,6 +1,0 @@
-# Spanish strings go here for Rails i18n
-es:
-  field_root_issue: "Tarea padre principal"
-  label_root_issue: "Tarea padre principal"
-  field_parent_issue: "Tarea padre principal3"
-  label_parent_issue: "Tarea padre principal3"
