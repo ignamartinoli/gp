@@ -36,5 +36,5 @@
 /plugins-prod2/*
 /plugins-test/*
 
-.config/database.yml
+config/database.yml
 dump.sql
