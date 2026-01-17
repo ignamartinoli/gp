@@ -103,7 +103,7 @@ class ConvocatoriaController < ApplicationController
   @convocatoria = scope
                   .search(params[:q]) # <-- filtro por Resolución o Nombre
                   .page(params[:page])
-                  .per(10)
+                  .per(5)
                   .order(
                    ActiveRecord::Base.sanitize_sql_array(
                     [
@@ -179,7 +179,7 @@ def show
            .includes(:regional)
            .order('regionales.nombre ASC, sedes.nombre ASC')
            .page(params[:page])
-           .per(10)
+           .per(5)
 
 
   @dimensiones = Dimension
