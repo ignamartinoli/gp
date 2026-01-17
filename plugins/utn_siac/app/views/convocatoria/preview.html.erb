@@ -53,18 +53,6 @@
   <div class="convocatoria-column">
     <div class="div_section">
       <h3 class="siac_title">Administración de convocatorias</h3>
-      <hr>
-
-      <h1>Detalles de la Convocatoria</h1>
-
-      <p><strong>Resolución:</strong> <%= @convocatoria.resolucion %></p>
-      <p><strong>Nombre:</strong> <%= @convocatoria.nombre %></p>
-      <p><strong>Fecha de inicio:</strong> <%= @convocatoria.fecha_inicio.strftime("%d/%m/%Y") %></p>
-      <p><strong>Fecha de finalización:</strong> <%= @convocatoria.fecha_hasta.strftime("%d/%m/%Y") %></p>
-      <p><strong>Titulaciones:</strong> <%= @convocatoria.titulaciones %></p>
-      <p><strong>Etapa:</strong> <%= @convocatoria.etapa %></p>
-
-      <hr>
       <h2>Dimensiones asociadas</h2>
 
       <% if @dimensiones.present? %>
@@ -399,14 +387,17 @@
       /* ================== NEW: tabs horizontales de componentes ================== */
       .componentes-tabs {
           display: flex;
-          gap: 0.6rem;
           flex-wrap: nowrap;
-          overflow-x: auto;
+          gap: 0.6rem;
           padding: 0.35rem 0.2rem 0.6rem;
-          margin: 0.35rem 0 0.35rem;
+          margin: 0.35rem 0;
+          overflow: hidden;
       }
 
       .componente-tab {
+          flex: 1 1 0;
+          min-width: 0;
+          max-width: 100%;
           border: none;
           cursor: pointer;
           padding: 0.55rem 0.95rem;
@@ -415,7 +406,8 @@
           color: #fff;
           font-weight: 600;
           white-space: nowrap;
-          flex: 0 0 auto;
+          overflow: hidden;
+          text-overflow: ellipsis;
       }
 
       .componente-tab:hover { filter: brightness(1.05); }
