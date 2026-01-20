@@ -1,6 +1,6 @@
 services:
-  redmine-test:
-    container_name: gp-redmine-test
+  redmine:
+    container_name: gp-redmine
     build:
       context: .
       dockerfile: Dockerfile
@@ -43,7 +43,7 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
       - ./00_create_postgres_role.sql:/docker-entrypoint-initdb.d/00_create_postgres_role.sql:ro
-      - ./dump.sql:/docker-entrypoint-initdb.d/01_dump.sql:ro
+      - ./dump_1.sql:/docker-entrypoint-initdb.d/01_dump.sql:ro
     ports:
       - "5433:5432"
 
