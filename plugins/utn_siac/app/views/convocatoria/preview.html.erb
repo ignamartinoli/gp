@@ -420,11 +420,11 @@
       /* ================== NEW: INFORMACION / AUTOEVALUACION row ================== */
       .subtabs {
           display: flex;
-          gap: 0.6rem;
           flex-wrap: nowrap;
-          overflow-x: auto;
+          gap: 0.6rem;
           padding: 0.15rem 0.2rem 0.6rem;
           margin: 0 0 0.75rem;
+          overflow: hidden;
       }
 
       .subtab {
@@ -436,9 +436,13 @@
           color: #ffffff;
           font-weight: 700;
           letter-spacing: 0.03em;
-          white-space: nowrap;
-          flex: 0 0 auto;
           text-transform: uppercase;
+          flex: 1 1 0;
+          min-width: 0;
+          text-align: center;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
       }
 
       .subtab.is-active {
