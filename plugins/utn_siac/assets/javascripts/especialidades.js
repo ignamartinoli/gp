@@ -1,3 +1,62 @@
+console.log("[SIAC][especialidades.js] CARGADO", new Date().toISOString());
+
+// Captura errores globales
+window.addEventListener("error", (e) => {
+  console.error("[SIAC][window.error]", e.message, e.filename, e.lineno, e.colno, e.error);
+});
+window.addEventListener("unhandledrejection", (e) => {
+  console.error("[SIAC][unhandledrejection]", e.reason);
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  console.log("[SIAC][DOM] DOMContentLoaded");
+
+  const selectTitulacion = document.querySelector("#convocatoria_titulaciones");
+  console.log("[SIAC][DOM] select #convocatoria_titulaciones =", !!selectTitulacion);
+
+  const tbody = document.querySelector("#especialidades-container");
+  console.log("[SIAC][DOM] tbody #especialidades-container =", !!tbody);
+
+  // si querés, dispará un test manual al cargar (opcional)
+  // if (selectTitulacion && selectTitulacion.value) window.actualizarEspecialidades(selectTitulacion.value);
+});
+
+// ESTA ES LA FUNCIÓN QUE LLAMA EL onchange DEL SELECT
+window.actualizarEspecialidades = function (titulacionValue) {
+  console.log("[SIAC][actualizarEspecialidades] ENTRÓ. value =", titulacionValue);
+
+  titulacionValue = titulacionValue || 0;
+
+  const tbody = document.getElementById("especialidades-container");
+  if (!tbody) {
+    console.error("[SIAC] No existe #especialidades-container en el DOM");
+    return;
+  }
+
+  const url = `/convocatorias/cargar_especialidades/${titulacionValue}`;
+  console.log("[SIAC][fetch] GET", url);
+
+  fetch(url, { method: "GET" })
+    .then((r) => {
+      console.log("[SIAC][fetch] status =", r.status, r.statusText);
+      return r.text().then((txt) => ({ status: r.status, txt }));
+    })
+    .then(({ status, txt }) => {
+      console.log("[SIAC][fetch] body length =", txt.length, "primeros 200 chars:", txt.slice(0, 200));
+      if (status >= 400) {
+        console.error("[SIAC][fetch] Error HTTP:", status, txt);
+        return;
+      }
+      tbody.innerHTML = txt;
+
+      // re-aplicar filtros si existen
+      if (window.applyEspecialidadesFilter) window.applyEspecialidadesFilter();
+      if (window.filterEspecialidades) window.filterEspecialidades();
+    })
+    .catch((err) => console.error("[SIAC][fetch] EXCEPTION", err));
+};
+
+
 document.addEventListener('DOMContentLoaded', function () {
 
 	// Desmarcar todos los checkboxes en las tablas
@@ -172,42 +231,66 @@ document.addEventListener('DOMContentLoaded', function () {
 			.toLowerCase();
 	}
 
-	function filterEspecialidades() {
-		var input = document.getElementById("searchEspecialidades");
-		if (!input) return;
+ window.filterEspecialidades = function () {
+    var input = document.getElementById("searchEspecialidades");
+    if (!input) return;
 
-		var term = stripAccents(input.value.trim());
-		var table = document.getElementById("tableEspecialidades");
-		if (!table) return;
+    var term = stripAccents(input.value.trim());
+    var table = document.getElementById("tableEspecialidades");
+    if (!table) return;
 
-		var tbody = table.querySelector("#especialidades-container");
-		if (!tbody) return;
+    var tbody = table.querySelector("#especialidades-container");
+    if (!tbody) return;
 
-		var rows = Array.from(tbody.querySelectorAll("tr")).filter(tr => !tr.classList.contains("paginationTr"));
-		var visible = 0;
+    var rows = Array.from(tbody.querySelectorAll("tr")).filter(tr => !tr.classList.contains("paginationTr"));
+    rows.forEach(function (tr) {
+      var tds = tr.getElementsByTagName("td");
+      if (tds.length < 3) return;
 
-		rows.forEach(function (tr) {
-			var tds = tr.getElementsByTagName("td");
-			if (tds.length < 3) return;
+      var codigo = stripAccents(tds[1].textContent);
+      var nombre = stripAccents(tds[2].textContent);
+      var show = term === "" || codigo.includes(term) || nombre.includes(term);
+      tr.style.display = show ? "" : "none";
+    });
+  };
 
-			var codigo = stripAccents(tds[1].textContent);
-			var nombre = stripAccents(tds[2].textContent);
-
-			var show = term === "" || codigo.includes(term) || nombre.includes(term);
-			tr.style.display = show ? "" : "none";
-			if (show) visible++;
-		});
-
-		var counter = document.getElementById("searchEspecialidadesCount");
-		if (counter) {
-			var total = rows.length;
-			counter.textContent = term
-				? `${visible} resultado${visible !== 1 ? 's' : ''} de ${total}`
-				: `${total} especialidades`;
-		}
-	}
-
-	document.addEventListener("DOMContentLoaded", filterEspecialidades);
-
-	window.initEspecialidadesSearch = filterEspecialidades;
+  // aplicar el filtro una vez al cargar
+  window.filterEspecialidades();
 });
+
+	window.actualizarEspecialidades = function(titulacionValue) {
+  titulacionValue = titulacionValue || 0;
+
+  // (opcional) reset del "seleccionar todo"
+  const header = document.getElementById('checkBoxConv');
+  if (header) {
+    header.checked = false;
+    header.indeterminate = false;
+  }
+
+  fetch(`/convocatorias/cargar_especialidades/${titulacionValue}`)
+    .then(r => r.text())
+    .then(html => {
+      const tbody = document.getElementById('especialidades-container');
+      if (!tbody) return console.error("No existe #especialidades-container (falta el <tbody id='especialidades-container'> en la vista)");
+      tbody.innerHTML = html;
+
+      // re-aplicar filtro
+      if (window.filterEspecialidades) window.filterEspecialidades();
+      if (window.applyEspecialidadesFilter) window.applyEspecialidadesFilter();
+    })
+    .catch(console.error);
+  titulacionValue = titulacionValue || 0;
+
+  fetch(`/convocatorias/cargar_especialidades/${titulacionValue}`)
+    .then(r => r.text())
+    .then(html => {
+      const tbody = document.getElementById('especialidades-container');
+      if (!tbody) return console.error("No existe #especialidades-container");
+      tbody.innerHTML = html;
+
+      // re-aplicar filtro si querés
+      if (window.applyEspecialidadesFilter) window.applyEspecialidadesFilter();
+    })
+    .catch(err => console.error(err));
+};

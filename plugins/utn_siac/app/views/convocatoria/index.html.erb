@@ -35,7 +35,7 @@
           <td><%= convocatoria.nombre %></td>
           <td><%= convocatoria.fecha_inicio.strftime("%d/%m/%Y") %></td>
           <td><%= convocatoria.fecha_hasta.strftime("%d/%m/%Y") %></td>
-          <td><%= get_nombre_titulacion(convocatoria.titulaciones.to_i) %></td>
+          <td><%= convocatoria.tipo_especialidad %></td>
           <td>
             <span class="estado-etapa <%= convocatoria.etapa.to_s.strip.downcase %>">
               <%= convocatoria.etapa %>

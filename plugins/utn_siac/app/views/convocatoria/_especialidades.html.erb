@@ -1,15 +1,13 @@
-<tbody id="especialidades-container">
-  <% especialidades.each do |especialidad| %>
-    <tr id="<%= especialidad.id %>">
-      <td>
-        <div class="checkboxConvContainer">
-          <input type="checkbox" name="especialidad_ids[]" value="<%= especialidad.id %>">
-          <!-- send PK --> Seleccionar
-        </div>
-      </td>
-      <td><%= especialidad.codigo %></td>
-      <td><%= especialidad.nombre %></td>
-    </tr>
-  <% end %>
-  <tr class="paginationTr"><td colspan="3"></td></tr>
-</tbody>
+<% especialidades.each do |e| %>
+  <tr id="<%= e["id_especialidad"] %>">
+    <td>
+      <div class="checkboxConvContainer">
+        <input type="checkbox" name="especialidad_ids[]" value="<%= e["id_especialidad"] %>">
+        Seleccionar
+      </div>
+    </td>
+    <td><%= e["letra"].to_s %></td>
+    <td><%= e["nombre"] %></td>
+  </tr>
+<% end %>
+<tr class="paginationTr"><td colspan="3"></td></tr>

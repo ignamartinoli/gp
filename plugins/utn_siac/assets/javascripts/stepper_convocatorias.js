@@ -44,59 +44,107 @@ document.addEventListener("DOMContentLoaded", function () {
         );
 
       case 3: {
-        const errorIni = document.querySelector(".errorFechaInicio");
-        const errorFin = document.querySelector(".errorFechaHasta");
+        // Mapa: name => selector del div de error (1 por input)
+        const errMap = {
+          fecha_inicio: ".errorFechaInicio",
+          fecha_fin_capacitacion: ".errorFechaFinCapacitacion",
+          fecha_fin_carga: ".errorFechaFinCarga",
+          fecha_fin_revision: ".errorFechaFinRevision",
+          fecha_fin_correcciones: ".errorFechaFinCorrecciones",
+          fecha_fin_auditoria: ".errorFechaFinAuditoria",
+          fecha_hasta: ".errorFechaHasta"
+        };
 
-        limpiarErrores(errorIni);
-        limpiarErrores(errorFin);
+        const getInput = (name) =>
+          document.querySelector(`input[name='convocatoria[${name}]']`);
 
-        const inicioStr = convocatoria_fecha_inicio.value;
-        const hastaStr = convocatoria_fecha_hasta.value;
+        const getErrEl = (name) =>
+          document.querySelector(errMap[name]);
 
-        // ambos obligatorios
-        if (!inicioStr) {
-          mostrarError(errorIni, "Debes seleccionar la fecha de inicio.");
-          return false;
+        // Limpia todos los errores + estilos
+        for (const k of Object.keys(errMap)) {
+          const errEl = getErrEl(k);
+          if (errEl) limpiarErrores(errEl);
+
+          const input = getInput(k);
+          if (input) input.classList.remove("input-error");
         }
-        if (!hastaStr) {
-          mostrarError(errorFin, "Debes seleccionar la fecha de cierre.");
+
+        const setFieldError = (name, msg) => {
+          const errEl = getErrEl(name);
+          const input = getInput(name);
+
+          if (errEl) mostrarError(errEl, msg);
+          if (input) input.classList.add("input-error");
+
           return false;
-        }
+        };
 
-        function parseFechaDMY(fechaStr) {
-          // formato esperado: yyyy-mm-dd
-          const partes = fechaStr.split("-");
-          return new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]));
-        }  
+        const getVal = (name) => {
+          const el = getInput(name);
+          console.log(`[SIAC][Paso3] ${name}=`, el ? el.value : null, el);
+          return el ? el.value : "";
+        };
 
-        const inicio = parseFechaDMY(inicioStr);
-        const hasta = parseFechaDMY(hastaStr);
+        const parseYMD = (s) => {
+          // input type="date" => "YYYY-MM-DD"
+          const [y, m, d] = s.split("-").map(n => parseInt(n, 10));
+          return new Date(y, m - 1, d, 12, 0, 0, 0); // 12:00 evita edge TZ
+        };
 
-        // hoy a las 00:00
         const hoy = new Date();
         hoy.setHours(0, 0, 0, 0);
 
-        // inicio puede ser hoy, pero NO menor a hoy
-        if (inicio < hoy) {
-          mostrarError(errorIni, "La fecha de inicio no puede ser menor a la fecha actual.");
-          return false;
+        // Orden real de carga/validación (cierre al final)
+        const chain = [
+          { name: "fecha_inicio",          label: "Inicio" },
+          { name: "fecha_fin_capacitacion",label: "Fin capacitación" },
+          { name: "fecha_fin_carga",       label: "Fin carga" },
+          { name: "fecha_fin_revision",    label: "Fin revisión" },
+          { name: "fecha_fin_correcciones",label: "Fin correcciones" },
+          { name: "fecha_fin_auditoria",   label: "Fin auditoría" },
+          { name: "fecha_hasta",           label: "Fin convocatoria" }
+        ];
+
+        // 1) Required por campo (error debajo del input correcto)
+        for (const f of chain) {
+          const v = getVal(f.name);
+          if (!v) {
+            return setFieldError(f.name, `Debes seleccionar ${f.label.toLowerCase()}.`);
+          }
         }
 
-        // cierre debe ser HOY o posterior (no menor)
-        if (hasta < hoy) {
-          mostrarError(errorFin, "La fecha de cierre no puede ser menor a la fecha actual.");
-          return false;
+        // 2) No menor a hoy (error en el campo que falla)
+        for (const f of chain) {
+          const dt = parseYMD(getVal(f.name));
+          if (dt < hoy) {
+            return setFieldError(
+              f.name,
+              `${f.label} no puede ser menor a la fecha actual.`
+            );
+          }
         }
 
-        // cierre > inicio (no puede ser igual ni menor)
-        if (hasta <= inicio) {
-          mostrarError(errorFin, "La fecha de cierre debe ser posterior a la fecha de inicio.");
-          return false;
-        }
+        // 3) Orden secuencial (error en el campo que rompe la cadena)
+        for (let i = 1; i < chain.length; i++) {
+          const prev = chain[i - 1];
+          const curr = chain[i];
 
+          const prevDt = parseYMD(getVal(prev.name));
+          const currDt = parseYMD(getVal(curr.name));
+
+          if (currDt < prevDt) {
+            return setFieldError(
+              curr.name,
+              `${curr.label} debe ser igual o posterior a ${prev.label}.`
+            );
+          }
+        }
 
         return true;
       }
+
+
 
 
       case 4:

@@ -12,8 +12,9 @@
       <li class="step" data-step="6">6. Finalizar</li>
     </ul>
 
-    <%= form_for @convocatoria, url: create_convocatoria_path,
-                html: { onsubmit: 'return validarNuevaConvocatoria(event)' } do |f| %>
+  <%= form_with url: create_convocatoria_path, scope: :convocatoria, local: true,
+        html: { onsubmit: 'return validarNuevaConvocatoria(event)' } do |f| %>
+
 
       <!-- PASO 1 -->
       <div class="step-content" data-step="1">
@@ -91,9 +92,9 @@
               <span class="tooltiptext">Tipo de Titulación a la cual referira la convocatoria</span>
             </span>
             <%= f.select :titulaciones,
-                    options_for_select(@titulaciones),
-                    include_blank: "Selecciona una opción",
-                    onchange: "actualizarEspecialidades(this.value)" %>
+              options_for_select(@titulaciones),
+              { include_blank: "Selecciona una opción" },
+              { id: "convocatoria_titulaciones", onchange: "actualizarEspecialidades(this.value)" } %>
           </div>
           <div class="error-container">
             <div class="errorTitulacion"></div>
@@ -126,7 +127,9 @@
                 </tr>
               </thead>
               <!-- Aquí se cargarán las especialidades con JS (AJAX) -->
-              <%= render partial: "especialidades", locals: { especialidades: @especialidades } %>
+               <tbody id="especialidades-container">
+                  <%= render partial: "especialidades", locals: { especialidades: @especialidades } %>
+                </tbody>
             </table>
           </div>
 
@@ -148,46 +151,115 @@
       <div class="step-content" data-step="3" style="display:none">
         <h3>Períodos de Convocatoria</h3>
 
+        <!-- Inicio convocatoria (arriba) -->
         <div class="field-container">
-          <div class="field">
-            <label>Fecha de la convocatoria:</label>
+          <div class="field field--section">
+            <label>Convocatoria</label>
+            <small>Definí primero el inicio; el cierre se completa al final.</small>
           </div>
-          <span class="tooltip">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              class="bi bi-info-circle-fill"
-              viewBox="0 0 16 16"
-            >
-              <path
-                d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"
-              />
-            </svg>
-            <span class="tooltiptext">Fecha desde y hasta estará abierta la convocatoria</span>
-          </span>
+
           <div class="field">
-            <%= f.label :fecha_inicio, "Desde: " %>
-            <%= f.date_field :fecha_inicio, data: { required: true } %>
+            <label>Inicio convocatoria:</label>
+            <input id="convocatoria_fecha_inicio" data-required="true" type="date" name="convocatoria[fecha_inicio]">
           </div>
-          <div class="field">
-            <%= f.label :fecha_hasta, "Hasta:" %>
-            <%= f.date_field :fecha_hasta, data: { required: true } %>
-          </div>
+
+          <div class="field field--empty"></div>
         </div>
+
         <div class="error-container">
           <div></div>
           <div class="errorFechaInicio"></div>
-          <div class="errorFechaHasta"></div>
+          <div></div>
         </div>
 
-       <div class="step-buttons">
+        <!-- Etapas -->
+        <div class="field-container">
+          <div class="field field--section">
+            <label>Fechas de etapas</label>
+          </div>
+
+          <div class="field">
+            <label>Fin capacitación:</label>
+            <input id="convocatoria_fecha_fin_capacitacion" data-required="true" type="date" name="convocatoria[fecha_fin_capacitacion]">
+          </div>
+
+          <div class="field">
+            <label>Fin carga:</label>
+            <input id="convocatoria_fecha_fin_carga" data-required="true" type="date" name="convocatoria[fecha_fin_carga]">
+          </div>
+        </div>
+
+        <div class="error-container">
+          <div></div>
+          <div class="errorFechaFinCapacitacion"></div>
+          <div class="errorFechaFinCarga"></div>
+        </div>
+
+        <div class="field-container">
+          <div class="field field--section"></div>
+
+          <div class="field">
+            <label>Fin revisión interna:</label>
+            <input id="convocatoria_fecha_fin_revision" data-required="true" type="date" name="convocatoria[fecha_fin_revision]">
+          </div>
+
+          <div class="field">
+            <label>Fin correcciones:</label>
+            <input id="convocatoria_fecha_fin_correcciones" data-required="true" type="date" name="convocatoria[fecha_fin_correcciones]">
+          </div>
+        </div>
+
+        <div class="error-container">
+          <div></div>
+          <div class="errorFechaFinRevision"></div>
+          <div class="errorFechaFinCorrecciones"></div>
+        </div>
+
+        <div class="field-container">
+          <div class="field field--section"></div>
+
+          <div class="field">
+            <label>Fin auditoría externa:</label>
+            <input id="convocatoria_fecha_fin_auditoria" data-required="true" type="date" name="convocatoria[fecha_fin_auditoria]">
+          </div>
+
+          <div class="field field--empty"></div>
+        </div>
+
+        <div class="error-container">
+          <div></div>
+          <div class="errorFechaFinAuditoria"></div>
+          <div></div>
+        </div>
+
+        <!-- Fin convocatoria (AL ÚLTIMO) -->
+        <div class="field-container field-container--final">
+          <div class="field field--section">
+            <label>Cierre</label>
+            <small>Este es el último dato a confirmar.</small>
+          </div>
+
+          <div class="field">
+            <label>Fin convocatoria:</label>
+            <input id="convocatoria_fecha_hasta" data-required="true" type="date" name="convocatoria[fecha_hasta]">
+          </div>
+
+          <div class="field field--empty"></div>
+        </div>
+
+        <div class="error-container">
+          <div></div>
+          <div class="errorFechaHasta"></div>
+          <div></div>
+        </div>
+
+        <div class="step-buttons">
           <button type="button" class="step-btn prev-step">Atrás</button>
           <button type="button" class="step-btn next-step">Siguiente</button>
         </div>
 
       </div>
+
 
       <!-- PASO 4 -->
       <div class="step-content" data-step="4" style="display:none">
@@ -208,7 +280,9 @@
               </tr>
             </thead>
             <!-- Aquí se cargarán las sedes con JS (AJAX) -->
-            <%= render partial: "sedes", locals: { sedes: @sedes } %>
+            <tbody id="sedes-container">
+              <%= render partial: "sedes", locals: { sedes: @sedes } %>
+            </tbody>
           </table>
         </div>
 
@@ -380,50 +454,62 @@
 
 
   function generarPDF() {
-      const form = document.getElementById("new_convocatoria");
-      const data = new FormData(form);
+    // 1) Encontrar el form de manera robusta (sin depender del id)
+    const form =
+      document.querySelector('form#new_convocatoria') ||
+      document.querySelector('form[action*="convocatorias"]') ||
+      document.querySelector('form');
 
-      // checkboxes dinámicos
-      document.querySelectorAll("input[name='componentes_codigos[]']").forEach(ch => {
-          if (ch.checked) data.append("componentes_codigos[]", ch.value);
-      });
+    if (!form) {
+      console.error("[SIAC][PDF] No se encontró el <form> en el DOM");
+      return;
+    }
 
-      document.querySelectorAll("input[name='sedes_codigos[]']").forEach(ch => {
-          if (ch.checked) data.append("sedes_codigos[]", ch.value);
-      });
+    const data = new FormData(form);
 
-      document.querySelectorAll("input[name='especialidad_ids[]']").forEach(ch => {
-          if (ch.checked) data.append("especialidad_ids[]", ch.value);
-      });
+    // 2) Asegurar que incluimos checkboxes dinámicos (los que se cargan por AJAX)
+    //    OJO: si el checkbox está dentro del form y tiene name="...[]", FormData ya lo incluye.
+    //    Igual lo reforzamos por seguridad.
 
-      // campos texto/select
-      data.append("resolucion", document.getElementById("inputResolucion").value);
-      data.append("nombre", document.getElementById("inputNombre").value);
-      data.append("titulaciones", document.getElementById("convocatoria_titulaciones").value);
-      data.append("fecha_inicio", document.getElementById("convocatoria_fecha_inicio").value);
-      data.append("fecha_hasta", document.getElementById("convocatoria_fecha_hasta").value);
+    // Componentes
+    document.querySelectorAll("input[name='convocatoria[componentes_codigos][]']:checked, input[name='componentes_codigos[]']:checked")
+      .forEach(ch => data.append("convocatoria[componentes_codigos][]", ch.value));
 
-      // CSRF
-      const token = document.querySelector('meta[name="csrf-token"]').getAttribute("content");
+    // Sedes
+    document.querySelectorAll("input[name='convocatoria[sedes_codigos][]']:checked, input[name='sedes_codigos[]']:checked")
+      .forEach(ch => data.append("convocatoria[sedes_codigos][]", ch.value));
 
-      fetch("/convocatorias/pdf_preview", {
-          method: "POST",
-          headers: { "X-CSRF-Token": token },
-          body: data
-      })
+    // Especialidades
+    document.querySelectorAll("input[name='convocatoria[especialidad_ids][]']:checked, input[name='especialidad_ids[]']:checked")
+      .forEach(ch => data.append("convocatoria[especialidad_ids][]", ch.value));
+
+    // 3) CSRF
+    const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+    const token = tokenMeta ? tokenMeta.getAttribute("content") : null;
+
+    // 4) POST al endpoint de preview
+    fetch("/convocatorias/pdf_preview", {
+      method: "POST",
+      headers: token ? { "X-CSRF-Token": token } : {},
+      body: data
+    })
       .then(response => {
-          if (!response.ok) throw new Error("Error en la generación del PDF");
-          return response.blob();
+        if (!response.ok) throw new Error("Error en la generación del PDF");
+        return response.blob();
       })
       .then(blob => {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "Vista_Prevista_Convocatoria.pdf";
-          a.click();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "Vista_Prevista_Convocatoria.pdf";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
       })
-      .catch(err => console.error("Error generando PDF:", err));
+      .catch(err => console.error("[SIAC][PDF] Error generando PDF:", err));
   }
+
 
 
 
