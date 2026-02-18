@@ -278,8 +278,8 @@ class ConvocatoriaController < ApplicationController
 
     Rails.logger.info("[SIAC][CREATE] procedure raw=#{resultado.inspect} status=#{status}")
 
-    unless status == 1
-      flash.now[:error] = "No se pudo crear la convocatoria."
+    if status <= 0
+      flash.now[:error] = "No se pudo crear la convocatoria. Código=#{status} (ref: #{request.request_id})."
       preparar_form_nueva_convocatoria
       return render :new
     end
