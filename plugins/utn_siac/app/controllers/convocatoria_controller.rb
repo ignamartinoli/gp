@@ -119,7 +119,15 @@ class ConvocatoriaController < ApplicationController
   def index
     require "date"
 
-    # Traer todo (no solo activas), y luego filtrar canceladas
+    # 0) Bookmarks del usuario (MySQL)
+    bookmarked_ids = Bookmark
+      .where(user_id: User.current.id)
+      .pluck(:convocatorias_id)
+      .map(&:to_i)
+
+    bookmarked_set = bookmarked_ids.each_with_object({}) { |id, h| h[id] = true } # O(1)
+
+    # 1) Traer todo (Postgres)
     rows = Siac::SiacRepository.function_typed(
       "public.siac_buscar_convocatorias_x_parametros",
       [
@@ -130,12 +138,12 @@ class ConvocatoriaController < ApplicationController
       ]
     )
 
-    # Filtrar las canceladas
+    # 2) Filtrar canceladas
     rows = rows.reject do |r|
       r["nombre_estado_actual"].to_s.strip.downcase == "cancelada"
     end
 
-    # Buscador
+    # 3) Buscador
     q = params[:q].to_s.strip.downcase
     if q.present?
       rows = rows.select do |r|
@@ -144,6 +152,7 @@ class ConvocatoriaController < ApplicationController
       end
     end
 
+    # 4) DTOs
     dtos = rows.map do |r|
       Siac::ConvocatoriaDto.new(
         id: r["id_convocatoria"],
@@ -158,12 +167,24 @@ class ConvocatoriaController < ApplicationController
       )
     end
 
+    # 5) Orden:
+    #    - Marcadas primero
+    #    - Dentro de cada grupo: fecha_inicio desc, id desc (tu orden)
+    dtos.sort_by! do |x|
+      is_bookmarked = bookmarked_set[x.id.to_i] ? 0 : 1
+      fecha_key = x.fecha_inicio || Date.new(1900, 1, 1)
 
-    dtos.sort_by! { |x| [x.fecha_inicio || Date.new(1900,1,1), x.id.to_i] }
-    dtos.reverse!
+      [
+        is_bookmarked,    # 0 primero
+        -fecha_key.jd,    # desc
+        -x.id.to_i        # desc
+      ]
+    end
 
     @convocatoria = Kaminari.paginate_array(dtos).page(params[:page]).per(5)
   end
+
+
 
 
   def create
@@ -727,46 +748,63 @@ class ConvocatoriaController < ApplicationController
 
 
 
- def bookmark
-  # Encuentra la convocatoria por ID
-  @convocatoria = Convocatoria.find(params[:id])
+  def bookmark
+    convocatoria_id = params[:id].to_i
 
-  # Verifica si ya existe un registro en 'bookmarks' para el usuario actual y la convocatoria
-  existing_bookmark = Bookmark.find_by(convocatorias_id: @convocatoria.id, user_id: User.current.id)
+    if convocatoria_id <= 0
+      flash[:alert] = "ID de convocatoria inválido."
+      return redirect_to convocatorias_path
+    end
 
-  if existing_bookmark
-   # Si ya está marcado, lo eliminamos
-   existing_bookmark.destroy
-   flash[:notice] = 'Convocatoria desmarcada correctamente.'
-  else
-   # Si no está marcado, lo creamos
-   Bookmark.create(convocatorias_id: @convocatoria.id, user_id: User.current.id)
-   flash[:notice] = 'Convocatoria marcada correctamente.'
+    # Opcional: validar existencia en SIAC (Postgres). Si no querés validar, borrá este bloque.
+    begin
+      exists = Siac::SiacRepository.select_value(
+        'SELECT 1 FROM public."SIAC_Convocatorias" WHERE id_convocatoria = ? LIMIT 1',
+        convocatoria_id
+      ).to_i == 1
+    rescue => e
+      Rails.logger.error("[SIAC][BOOKMARK] ERROR validando existencia: #{e.class}: #{e.message}")
+      exists = true # no bloqueamos si falla la consulta
+    end
+
+    unless exists
+      flash[:alert] = "No se encontró la convocatoria en SIAC."
+      return redirect_to convocatorias_path
+    end
+
+    existing = Bookmark.find_by(convocatorias_id: convocatoria_id, user_id: User.current.id)
+
+    if existing
+      existing.destroy
+      flash[:notice] = "Convocatoria desmarcada correctamente."
+    else
+      Bookmark.create!(convocatorias_id: convocatoria_id, user_id: User.current.id)
+      flash[:notice] = "Convocatoria marcada correctamente."
+    end
+
+    redirect_to convocatorias_path
   end
 
-  # Redirige de vuelta a la lista de convocatorias
-  redirect_to convocatorias_path
- end
+  def unbookmark
+    convocatoria_id = params[:id].to_i
 
- def unbookmark
-  # Encuentra la convocatoria por ID
-  @convocatoria = Convocatoria.find(params[:id])
+    if convocatoria_id <= 0
+      flash[:alert] = "ID de convocatoria inválido."
+      return redirect_to convocatorias_path
+    end
 
-  # Encuentra el bookmark que el usuario actual tiene para esta convocatoria
-  bookmark = Bookmark.find_by(convocatorias_id: @convocatoria.id, user_id: User.current.id)
+    bookmark = Bookmark.find_by(convocatorias_id: convocatoria_id, user_id: User.current.id)
 
-  if bookmark
-   # Si existe, lo eliminamos
-   bookmark.destroy
-   flash[:notice] = 'Convocatoria desmarcada correctamente.'
-  else
-   # Si no existe el bookmark, no hacemos nada
-   flash[:alert] = 'No se encontró la convocatoria marcada.'
+    if bookmark
+      bookmark.destroy
+      flash[:notice] = "Convocatoria desmarcada correctamente."
+    else
+      flash[:alert] = "No se encontró la convocatoria marcada."
+    end
+
+    redirect_to convocatorias_path
   end
 
-  # Redirige de vuelta a la lista de convocatorias
-  redirect_to convocatorias_path
- end
 
  def buscar
   q = params[:query].to_s
