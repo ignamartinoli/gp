@@ -1,29 +1,18 @@
-<tbody>
-  <% sedes.each do |sede| %>
+<% if sedes.blank? %>
+  <tr>
+    <td colspan="3">No hay sedes disponibles para las especialidades seleccionadas.</td>
+  </tr>
+<% else %>
+  <% sedes.each do |s| %>
     <tr>
       <td>
         <div class="checkboxConvContainer">
-          <input
-            type="checkbox"
-            class="checkbox rowCheckboxesSedes"
-            name="sedes_codigos[]"
-            value="<%= sede[:id_facultad] %>"
-          >
+          <input type="checkbox" class="checkbox rowCheckboxSede" name="sedes_codigos[]" value="<%= s[:id_facultad] %>">
           Seleccionar
         </div>
       </td>
-
-      <!-- Facultad / Regional -->
-      <td><%= sede[:nombre] %></td>
-
-      <!-- Extensiones -->
-      <td>
-        <small><%= sede[:extensiones] %></small>
-      </td>
+      <td><%= h(s[:nombre]) %></td>
+      <td><%= h(s[:extensiones]) %></td>
     </tr>
   <% end %>
-
-  <tr class="paginationTr">
-    <td colspan="3"></td>
-  </tr>
-</tbody>
+<% end %>

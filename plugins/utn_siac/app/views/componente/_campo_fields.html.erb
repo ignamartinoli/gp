@@ -1,0 +1,127 @@
+<% real_idx = cf.options[:child_index] || cf.index %>
+
+<div class="nested-fields campo" data-index="<%= real_idx %>" data-campo-key="<%= real_idx %>">
+  <%= cf.hidden_field :autoevaluacion, value: (autoeval ? 1 : 0), class: "campo-autoevaluacion" %>
+  <%= cf.hidden_field :id %>
+  <%= cf.hidden_field :_destroy, value: "0", class: "campo-destroy" %>
+
+
+  <!-- PREGUNTA -->
+  <div class="long-field-4">
+    <div class="lf4c1"><%= cf.label :pregunta, "Pregunta:" %></div>
+    <div class="lf4c2">
+      <span class="tooltip">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">
+          <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"/>
+        </svg>
+        <span class="tooltiptext">Pregunta tal cual figurara en el formulario.</span>
+      </span>
+    </div>
+    <div class="lf4c3"><%= cf.text_field :pregunta, class: "inputPregunta" %></div>
+    <div class="lf4c4 errorPreguntaCampo"></div>
+  </div>
+
+  <!-- OBLIGATORIO -->
+  <div class="long-field-2">
+    <div class="lf2c1"><%= cf.label :obligatorio, "¿Es obligatorio completar este campo?" %></div>
+    <div class="lf2c2">
+      <div class="checkboxContainer">
+        <%= cf.check_box :obligatorio, { class: "checkbox" }, "1", "0" %>
+      </div>
+    </div>
+  </div>
+
+  <!-- PREGUNTA ORIENTADORA -->
+  <div class="long-field-2">
+    <div class="lf2c1"><%= cf.label :tiene_pregunta_orientadora, "¿Este campo posee pregunta orientadora?" %></div>
+    <div class="lf2c2">
+      <div class="checkboxContainer">
+        <%= cf.check_box :tiene_pregunta_orientadora, { class: "checkbox checkbox_pregunta_orientadora" }, "1", "0" %>
+      </div>
+    </div>
+  </div>
+
+  <div class="long-field-4 pregunta_orientadora_container"
+       style="<%= cf.object&.tiene_pregunta_orientadora.to_s == '1' ? '' : 'display:none' %>">
+    <div class="lf4c1"><%= cf.label :descripcion, "Pregunta Orientadora:" %></div>
+    <div class="lf4c2">
+      <span class="tooltip">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">
+          <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.920.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006/.399-.287-.47 l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"/>
+        </svg>
+        <span class="tooltiptext">Pregunta para guiar la respuesta.</span>
+      </span>
+    </div>
+    <div class="lf4c3"><%= cf.text_area :descripcion, class: "inputPreguntaOrientadora" %></div>
+    <div class="lf4c4 errorPreguntaOrientadora"></div>
+  </div>
+
+  <!-- TIPO CAMPO -->
+  <div class="long-field-4">
+    <div class="lf4c1"><%= cf.label :tipo_campo_id, "Tipo de Campo:" %></div>
+    <div class="lf4c2">
+      <span class="tooltip">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle-fill" viewBox="0 0 16 16">
+          <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006/.399-.287-.47 l-.451-.081.082-.381 2.29/.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"/>
+        </svg>
+        <span class="tooltiptext">Tipo de campo habilitado para la respuesta a la pregunta</span>
+      </span>
+    </div>
+    <div class="lf4c3">
+      <%= cf.select :tipo_campo_id,
+        options_for_select([["Selecciona una opción", ""]] + tipos_campo.map { |t| [t.nombre, t.id] }, cf.object.tipo_campo_id),
+        {},
+        class: "tipo-campo" %>
+    </div>
+    <div class="lf4c4 errorTipoCampo"></div>
+  </div>
+
+  <div class="tipo-campo-container"></div>
+
+  <!-- PERMITE ADJUNTOS -->
+  <div class="long-field-2">
+    <div class="lf2c1"><%= cf.label :permite_adjuntos, "¿Este campo permite adjuntar archivos?" %></div>
+    <div class="lf2c2">
+      <div class="checkboxContainer">
+        <%= cf.check_box :permite_adjuntos, { class: "checkbox checkbox_permite_adjuntos" }, "1", "0" %>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUBCAMPOS -->
+  <div class="subcampos-container">
+    <% (cf.object.subcampos || []).each_with_index do |sub, sidx| %>
+      <%= render "subcampo_fields",
+        campo_form: cf,
+        sub: sub,
+        sidx: sidx,
+        tipos_campo: tipos_campo %>
+    <% end %>
+  </div>
+
+  <template class="subcampo-template">
+    <%= render "subcampo_fields",
+      campo_form: cf,
+      sub: Subcampo.new,
+      sidx: "NEW_SUB",
+      tipos_campo: tipos_campo %>
+  </template>
+
+  <!-- JSON PARA OPCIONES EXISTENTES (UNO SOLO) -->
+  <script type="application/json" class="opciones-json">
+    <%= raw((cf.object.opciones_campos || []).map { |o|
+      { id: o.id, opcion: o.opcion, valor: o.try(:valor) }
+    }.to_json) %>
+  </script>
+
+  <div class="buttonera-2-c">
+    <div class="b2cb1">
+      <%= link_to "+ Agregar un nuevo SubCampo", "#", class: "add_subfield siac_button" %>
+    </div>
+    <div class="b2cb2">
+      <%= link_to "Eliminar Campo", "#", class: "remove_fields siac_button" %>
+    </div>
+  </div>
+
+  <hr>
+</div>

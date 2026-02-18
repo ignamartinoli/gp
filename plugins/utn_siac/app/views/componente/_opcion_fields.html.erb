@@ -1,0 +1,3 @@
+<%= campo_form.fields_for :opciones_campos_attributes, opcion, child_index: oidx do |opcion_form| %>
+  <%= render 'opcion_fields_inner', opcion_form: opcion_form %>
+<% end %>

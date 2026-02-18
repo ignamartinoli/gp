@@ -143,7 +143,7 @@ function initSiac() {
       if (campoIndexElement) campoIndexElement.textContent = newIndex + 1;
 
       newField.querySelectorAll("input, textarea, select").forEach(input => {
-        if (input.name) input.name = input.name.replace(/\[\d+\]/, `[${newIndex}]`);
+        if (input.name) input.name = input.name.replace(/\[campos_attributes\]\[\d+\]/, `[campos_attributes][${newIndex}]`);
         if (input.id) input.id = input.id.replace(/_\d+$/, `_${newIndex}`);
 
         // ⚠️ No limpiar los hidden que acompañan checkboxes (evita borrar el value="0")
@@ -246,7 +246,7 @@ function initSiac() {
       if (campoIndexElement) campoIndexElement.textContent = newIndex + 1;
 
       newField.querySelectorAll("input, textarea, select").forEach(input => {
-        if (input.name) input.name = input.name.replace(/\[\d+\]/, `[${newIndex}]`);
+        if (input.name) input.name = input.name.replace(/\[campos_attributes\]\[\d+\]/, `[campos_attributes][${newIndex}]`);
         if (input.id) input.id = input.id.replace(/_\d+$/, `_${newIndex}`);
 
         // ⚠️ No limpiar los hidden que acompañan checkboxes (evita borrar el value="0")
@@ -323,12 +323,18 @@ function initSiac() {
 
 
   function getRealCampoIndex(campoEl) {
-    // Busca el PRIMER input/select/textarea cuyo name contenga [campos_attributes][X]
+    // 1) Intentar resolver por name real de algún input
     const any = campoEl.querySelector('[name*="componente[campos_attributes]"]');
-    if (!any || !any.name) return null;
-    const m = any.name.match(/\[campos_attributes\]\[(\d+)\]/);
-    return m ? parseInt(m[1], 10) : null;
+    if (any && any.name) {
+      const m = any.name.match(/\[campos_attributes\]\[(\d+)\]/);
+      if (m) return parseInt(m[1], 10);
+    }
+
+    // 2) Fallback: data-index (evita que salga "null" en el name)
+    const di = campoEl.dataset.index;
+    return (di !== undefined && di !== null && di !== "") ? parseInt(di, 10) : null;
   }
+
 
   function generarSubcampo(e) {
     e.preventDefault();
@@ -446,11 +452,11 @@ function initSiac() {
               name="componente[campos_attributes][${campoIndex}][subcampos_attributes][${subcampoIndex}][tipo_campo_id]"
               class="tipo-subcampo">
               <option value="0">Seleccione una opción</option>
-              <option value="7">Campo de Texto (2000 Caracteres)</option>
-              <option value="8">Selección Única</option>
-              <option value="9">Selección Múltiple</option>
-              <option value="10">Campo Fecha</option>
-              <option value="11">Campo Número</option>
+              <option value="3">Campo de Texto (2000 Caracteres)</option>
+              <option value="4">Selección Única</option>
+              <option value="5">Selección Múltiple</option>
+              <option value="6">Campo Fecha</option>
+              <option value="7">Campo Número</option>
             </select>
             <input type="hidden"
               name="componente[campos_attributes][${campoIndex}][subcampos_attributes][${subcampoIndex}][_destroy]"
@@ -481,14 +487,29 @@ function initSiac() {
   camposContainer.addEventListener("click", function(e) {
     if (e.target.classList.contains("remove_fields")) {
       e.preventDefault();
-      e.stopPropagation();   
+      e.stopPropagation();
+
       const allFields = document.querySelectorAll(".nested-fields");
-      // Evitar eliminar el primer campo
-      if (allFields.length > 1) {
-        e.target.closest(".nested-fields").remove();
-        actualizarNumerosCampos();
+      if (allFields.length <= 1) return; // no borrar el primero
+
+      const wrapper = e.target.closest(".nested-fields");
+      if (!wrapper) return;
+
+      const idInput = wrapper.querySelector('input[name$="[id]"]');
+      const destroyInput = wrapper.querySelector('input[name$="[_destroy]"]');
+
+      // Si existe en BD (tiene id), marcar destroy y ocultar
+      if (idInput && idInput.value && destroyInput) {
+        destroyInput.value = "1";
+        wrapper.style.display = "none";
+      } else {
+        // Si es un campo nuevo (sin id), se puede eliminar del DOM
+        wrapper.remove();
       }
+
+      actualizarNumerosCampos();
     }
+
 
     if (e.target.classList.contains("add_subfield")) {
       e.preventDefault();
@@ -527,14 +548,27 @@ function initSiac() {
   camposAutoevalContainer.addEventListener("click", function(e) {
     if (e.target.classList.contains("remove_fields")) {
       e.preventDefault();
-      e.stopPropagation();   
+      e.stopPropagation();
+
       const allFields = document.querySelectorAll(".nested-fields-autoeval");
-      // Evitar eliminar el primer campo
-      if (allFields.length > 1) {
-        e.target.closest(".nested-fields-autoeval").remove();
-        actualizarNumerosCampos();
+      if (allFields.length <= 1) return;
+
+      const wrapper = e.target.closest(".nested-fields-autoeval");
+      if (!wrapper) return;
+
+      const idInput = wrapper.querySelector('input[name$="[id]"]');
+      const destroyInput = wrapper.querySelector('input[name$="[_destroy]"]');
+
+      if (idInput && idInput.value && destroyInput) {
+        destroyInput.value = "1";
+        wrapper.style.display = "none";
+      } else {
+        wrapper.remove();
       }
+
+      actualizarNumerosCamposAutoeval();
     }
+
 
     if (e.target.classList.contains("add_subfield")) {
       e.preventDefault();
@@ -594,10 +628,10 @@ function initSiac() {
         }
     
         switch (select.value) {
-            case "6": //Combobox
+            case "-6": //Combobox
                 container.innerHTML = generarCamposComboBox(select);
                 break;
-            case "7":
+            case "-7":
                 container.innerHTML = `
                 <div class="combo-box-container">
                   <div class="long-field-2">
@@ -629,10 +663,10 @@ function initSiac() {
                 `;
                 break;
             
-            case "8": //Seleccion Multiple
+            case "5": //Seleccion Multiple
                 container.innerHTML = generarCamposComboBox(select);
               break;
-            case "9": //Seleccion Unica
+            case "4": //Seleccion Unica
                 container.innerHTML = generarCamposComboBox(select);
                 break;
             default: // 1 = Campo de texto
@@ -657,13 +691,13 @@ function initSiac() {
       }
 
       switch (select.value) {
-        case "9":   // selección múltiple
+        case "5":   // selección múltiple
           container.innerHTML = generarCamposComboBox(select);
           break;
-        case "8":   // selección única
+        case "4":   // selección única
           container.innerHTML = generarCamposComboBox(select);
           break;
-        case "6":   // combobox
+        case "-12":   // combobox
           container.innerHTML = generarCamposComboBox(select);
           break;
         default:
@@ -688,12 +722,20 @@ function initSiac() {
 
       if (subcampo) {
           const campoIndex = getRealCampoIndex(campo);
+          if (campoIndex === null) {
+            console.warn("No se pudo resolver campoIndex; no genero opciones.");
+            return "";
+          }
           const subcampoIndex = Array.from(
           subcampo.parentElement.querySelectorAll(".subcampo, .fs-subcampo")
         ).indexOf(subcampo);
         nameBase = `componente[campos_attributes][${campoIndex}][subcampos_attributes][${subcampoIndex}][opciones_campos_attributes]`;
       } else if (campo) {
         const campoIndex = getRealCampoIndex(campo);
+        if (campoIndex === null) {
+          console.warn("No se pudo resolver campoIndex; no genero opciones.");
+          return "";
+        }
         nameBase = `componente[campos_attributes][${campoIndex}][opciones_campos_attributes]`;
       }
 
@@ -718,33 +760,83 @@ function initSiac() {
     const comboContainer = boton.closest(".combo-box-container");
     if (!comboContainer) return;
 
+    const campo = comboContainer.closest(".nested-fields, .nested-fields-autoeval");
+    if (!campo) return;
+
+    const campoIndex = getRealCampoIndex(campo);
+    if (campoIndex === null) {
+      console.warn("No pude resolver campoIndex real; no agrego opción.");
+      return;
+    }
+
+    // IMPORTANTE: siempre apuntar a opciones_campos_attributes del campo, no a lo que exista en el DOM
+    const nameBase = `componente[campos_attributes][${campoIndex}][opciones_campos_attributes]`;
+
     const contenedor = comboContainer.querySelector(".opciones-dinamicas");
     if (!contenedor) return;
 
-    // Detectar la base del name usando la primera opción como referencia
-    const primeraOpcion = contenedor.querySelector("input[name*='[opcion]']");
-    const baseName = primeraOpcion
-      ? primeraOpcion.name.replace(/\[\d+\]\[opcion\]/, "")
-      : "";
+    const filasVisibles = Array.from(contenedor.querySelectorAll(".long-field-4"))
+      .filter(r => r.style.display !== "none");
 
-    const cantidadOpciones = contenedor.querySelectorAll(".long-field-4").length;
-    const nuevoNumero = cantidadOpciones + 1;
+    const idx = filasVisibles.length;        // siguiente índice libre
+    const nro = idx + 1;
 
-    const nuevaOpcion = document.createElement("div");
-    nuevaOpcion.classList.add("long-field-4");
-    nuevaOpcion.innerHTML = `
-      <div class="lf4c1"><label> Opción ${nuevoNumero}: </label></div>
+    const row = document.createElement("div");
+    row.classList.add("long-field-4");
+    row.innerHTML = `
+      <div class="lf4c1"><label>Opción ${nro}:</label></div>
       <div class="lf4c2"><button type="button" class="eliminar-opcion siac_button">❌</button></div>
       <div class="lf4c3">
-        <input type="text" name="${baseName}[${cantidadOpciones}][opcion]" class="cb-input" placeholder="Opción ${nuevoNumero}">
-        <input type="hidden" name="${baseName}[${cantidadOpciones}][valor]" value="${nuevoNumero}">
+        <input type="text"  name="${nameBase}[${idx}][opcion]" class="cb-input" placeholder="Opción ${nro}">
+        <input type="hidden" name="${nameBase}[${idx}][valor]"  value="${nro}">
+        <input type="hidden" name="${nameBase}[${idx}][_destroy]" value="0">
       </div>
+      <div class="lf4c4 error-cb-input"></div>
     `;
 
-    contenedor.appendChild(nuevaOpcion);
+    contenedor.appendChild(row);
   }
 
-  
+
+  function leerOpcionesDesdeHidden(container) {
+    // Busca cualquier input hidden de opciones, soportando ambos formatos de name:
+    // correcto:   ...[opciones_campos_attributes][0][opcion]
+    // incorrecto: ...[opciones_campos_attributes[0]][opcion]
+    const inputs = Array.from(container.querySelectorAll('input[type="hidden"][name*="opciones_campos_attributes"]'));
+    if (inputs.length === 0) return [];
+
+    const map = new Map(); // idx -> {id, opcion, valor, _destroy}
+
+    function getIdxAndKey(name) {
+      // Caso correcto: [opciones_campos_attributes][12][opcion]
+      let m = name.match(/\[opciones_campos_attributes\]\[(\d+)\]\[(id|opcion|valor|_destroy)\]$/);
+      if (m) return { idx: parseInt(m[1], 10), key: m[2] };
+
+      // Caso roto: [opciones_campos_attributes[12]][opcion]
+      m = name.match(/\[opciones_campos_attributes\[(\d+)\]\]\[(id|opcion|valor|_destroy)\]$/);
+      if (m) return { idx: parseInt(m[1], 10), key: m[2] };
+
+      return null;
+    }
+
+    inputs.forEach(inp => {
+      const parsed = getIdxAndKey(inp.name);
+      if (!parsed) return;
+
+      if (!map.has(parsed.idx)) map.set(parsed.idx, {});
+      map.get(parsed.idx)[parsed.key] = inp.value;
+    });
+
+    // Ordenar por índice y filtrar borradas / vacías
+    return Array.from(map.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([idx, obj]) => ({ idx, ...obj }))
+      .filter(o => (o._destroy || "0") !== "1")
+      .filter(o => (o.opcion || "").toString().trim() !== "");
+  }
+
+
+
   function eliminarOpcion(boton) {
     const opcionRow = boton.closest(".long-field-4");
     if (!opcionRow) return;
@@ -824,7 +916,7 @@ function initSiac() {
 
   // 🪄 Generar dinámicamente las opciones complementarias para subcampos ya existentes
   document.querySelectorAll(".subcampo select.tipo-subcampo, .fs-subcampo select.tipo-subcampo").forEach(select => {
-    if (["8", "9", "6"].includes(select.value)) {
+    if (["4", "5"].includes(select.value)) {
       const event = new Event("change");
       select.dispatchEvent(event);
     }
@@ -833,27 +925,57 @@ function initSiac() {
 
 
   document.querySelectorAll(".opciones-existentes").forEach((container) => {
-    // ⚠️ Si ya existen inputs de opciones_campos, NO recrear
-    const yaTieneInputs = container.querySelector(
-      'input[name*="opciones_campos_attributes"]'
-    );
+    const campo = container.closest(".nested-fields, .nested-fields-autoeval");
+    if (!campo) return;
 
-    if (yaTieneInputs) {
-      console.log("⛔ Evitado: opciones existentes ya renderizadas por Rails.");
+    const tipo = campo.querySelector("select.tipo-campo")?.value;
+    if (!["4", "5"].includes(tipo)) {
+      container.innerHTML = "";
       return;
     }
 
-    const opciones = JSON.parse(container.dataset.opciones || "[]");
-    const campoIndex = container.dataset.campoIndex;
+    // 1) Prioridad: leer opciones desde hidden ya renderizados por Rails
+    const opcionesHidden = leerOpcionesDesdeHidden(container);
+
+    // 2) Fallback: leer desde data-opciones
+    let opciones = opcionesHidden;
+    if (opciones.length === 0) {
+      try {
+        opciones = JSON.parse(container.dataset.opciones || "[]")
+          .map(o => ({
+            id: o.id,
+            opcion: (o.opcion ?? "").toString(),
+            valor: o.valor
+          }))
+          .filter(o => o.opcion.trim() !== "");
+      } catch (e) {
+        opciones = [];
+      }
+    }
+
+    if (opciones.length === 0) {
+      // Si llegamos acá: no encontramos opciones ni por hidden ni por dataset
+      console.warn("⚠️ No se pudieron leer opciones (hidden/dataset).", container);
+      return;
+    }
+
+    const campoIndex = getRealCampoIndex(campo);
+    if (campoIndex === null) {
+      console.warn("⚠️ No pude resolver campoIndex real. No renderizo opciones.", campo);
+      return;
+    }
+
     const nameBase = `componente[campos_attributes][${campoIndex}][opciones_campos_attributes]`;
 
-    if (opciones.length > 0) {
-      const opcionesHTML = opciones
-        .map((op, i) => generarOpcionHTML(nameBase, i, op.opcion, op.valor, op.id))
-        .join("");
-      container.innerHTML = generarComboBoxHTML(nameBase, opcionesHTML);
-    }
+    const opcionesHTML = opciones
+      .map((op, i) => generarOpcionHTML(nameBase, i, op.opcion, op.valor, op.id))
+      .join("");
+
+    container.innerHTML = generarComboBoxHTML(nameBase, opcionesHTML);
   });
+
+
+
 
 
 
@@ -881,6 +1003,46 @@ function initSiac() {
     `;
   }
 
+  function uniqueKey() {
+  return Date.now().toString() + Math.floor(Math.random() * 1000).toString();
+}
+
+document.addEventListener("click", (e) => {
+  if (e.target.matches("#add_field")) {
+    e.preventDefault();
+    const container = document.getElementById("campos");
+    const proto = container.dataset.prototype;
+    container.insertAdjacentHTML("beforeend", proto.replaceAll("NEW_RECORD", uniqueKey()));
+  }
+
+  if (e.target.matches("#add_field_autoeval")) {
+    e.preventDefault();
+    const container = document.getElementById("campos-autoeval");
+    const proto = container.dataset.prototype;
+    container.insertAdjacentHTML("beforeend", proto.replaceAll("NEW_RECORD", uniqueKey()));
+  }
+
+  if (e.target.matches(".add-opcion")) {
+    e.preventDefault();
+    const opciones = e.target.closest(".nested-fields").querySelector(".opciones");
+    const proto = opciones.dataset.prototype;
+    opciones.insertAdjacentHTML("beforeend", proto.replaceAll("NEW_OPT", uniqueKey()));
+  }
+
+  if (e.target.matches(".remove-opcion")) {
+    e.preventDefault();
+    const wrapper = e.target.closest(".opcion");
+    const destroy = wrapper.querySelector('input[name$="[_destroy]"]');
+    const id = wrapper.querySelector('input[name$="[id]"]');
+
+    if (id && id.value) {
+      destroy.value = "1";
+      wrapper.style.display = "none";
+    } else {
+      wrapper.remove();
+    }
+  }
+});
 
 
 
@@ -939,6 +1101,14 @@ function initSiac() {
     if (ch.checked) togglePreguntaOrientadora.call(ch);
   });
   
+  document.querySelectorAll(".opciones-existentes").forEach(container => {
+    const campo = container.closest(".nested-fields, .nested-fields-autoeval");
+    const tipo = campo?.querySelector("select.tipo-campo")?.value;
+    if (["4","5"].includes(tipo)) {
+      // fuerza a que tu bloque de opciones corra con DOM ya listo
+      container.dispatchEvent(new Event("init"));
+    }
+  });
 
 }
 

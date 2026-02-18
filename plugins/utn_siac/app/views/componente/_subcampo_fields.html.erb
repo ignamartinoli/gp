@@ -1,0 +1,80 @@
+<%= fields_for "#{campo_form.object_name}[subcampos_attributes][#{sidx}]", sub do |subcampo_form| %>
+  <div class="subcampo">
+    <fieldset class="fs-subcampo">
+      <legend>Subcampo <span class="subcampo-index"></span></legend>
+
+      <%= subcampo_form.hidden_field :id %>
+      <%= subcampo_form.hidden_field :_destroy, value: "0", class: "subcampo-destroy" %>
+
+      <!-- PREGUNTA SUBCAMPO -->
+      <div class="long-field-4">
+        <div class="lf4c1"><label>Pregunta del Subcampo:</label></div>
+        <div class="lf4c3">
+          <%= subcampo_form.text_field :pregunta, class: "inputPreguntaSubcampo" %>
+        </div>
+        <div class="lf4c4 errorSubcampo errorPreguntaSubcampo"></div>
+      </div>
+
+      <!-- OBLIGATORIO -->
+      <div class="long-field-2">
+        <div class="lf2c1"><label>¿Es obligatorio?</label></div>
+        <div class="lf2c2">
+          <%= subcampo_form.check_box :obligatorio, { class: "checkbox" }, "1", "0" %>
+        </div>
+      </div>
+
+      <!-- TIENE PREGUNTA ORIENTADORA -->
+      <div class="long-field-2">
+        <div class="lf2c1"><label>¿Tiene pregunta orientadora?</label></div>
+        <div class="lf2c2">
+          <%= subcampo_form.check_box :tiene_pregunta_orientadora,
+                                      { class: "checkbox checkbox_pregunta_orientadora_subcampo" },
+                                      "1", "0" %>
+        </div>
+      </div>
+
+      <!-- PREGUNTA ORIENTADORA SUBCAMPO -->
+      <div class="long-field-4 pregunta_orientadora_container_subcampo"
+           style="<%= subcampo_form.object&.tiene_pregunta_orientadora.to_s == '1' ? '' : 'display:none' %>">
+        <div class="lf4c1"><label>Pregunta orientadora:</label></div>
+        <div class="lf4c3">
+          <%= subcampo_form.text_area :descripcion, rows: 2, class: "inputDescripcionSubcampo" %>
+        </div>
+        <!-- NO usa .errorSubcampo para no romper errores[0]/errores[1] -->
+        <div class="lf4c4 errorPreguntaOrientadora"></div>
+      </div>
+
+      <!-- PERMITE ADJUNTAR -->
+      <div class="long-field-2">
+        <div class="lf2c1"><label>¿Permite adjuntar?</label></div>
+        <div class="lf2c2">
+          <%= subcampo_form.check_box :permite_adjuntos, { class: "checkbox" }, "1", "0" %>
+        </div>
+      </div>
+
+      <!-- TIPO DE CAMPO SUBCAMPO -->
+      <div class="long-field-4">
+        <div class="lf4c1"><label>Tipo de Campo:</label></div>
+        <div class="lf4c3">
+          <%= subcampo_form.select :tipo_campo_id,
+            options_for_select([["Seleccione una opción",""]] + tipos_campo.map { |t| [t.nombre, t.id] }, subcampo_form.object&.tipo_campo_id),
+            {},
+            { class: "tipo-subcampo" } %>
+        </div>
+        <div class="lf4c4 errorSubcampo errorTipoSubcampo"></div>
+      </div>
+
+      <div class="tipo-subcampo-container"></div>
+
+      <div class="buttonera-1-c">
+        <%= link_to "Eliminar Subcampo", "#", class: "remove_subfields siac_button" %>
+      </div>
+    </fieldset>
+
+    <script type="application/json" class="opciones-json-sub">
+      <%= raw((subcampo_form.object.opciones_campos || []).map { |o|
+        { id: o.id, opcion: o.opcion, valor: o.try(:valor) }
+      }.to_json) %>
+    </script>
+  </div>
+<% end %>

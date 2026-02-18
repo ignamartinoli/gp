@@ -1,10 +1,10 @@
 <%# app/views/convocatoria/preview.html.erb %>
 
-<%# Precompute componentes of this convocatoria grouped by dimension to keep the view fast and clean %>
+<%# Precompute componentes grouped by dimension (SIAC repo returns Hash rows, not AR models) %>
 <%
-  componentes_de_convocatoria = @convocatoria.componentes.includes(:campos, :dimension)
-  componentes_por_dimension = componentes_de_convocatoria.group_by(&:dimension_id)
+  componentes_por_dimension = (@componentes || []).group_by { |r| r["id_dimension"].to_i }
 %>
+
 
 <div class="convocatoria-layout">
   <!-- COLUMNA IZQUIERDA: PANEL DE DIMENSIONES -->
@@ -31,13 +31,13 @@
             <% @dimensiones.each_with_index do |dimension, i| %>
               <li class="dimensiones-item">
                 <a
-                  href="#dimension-<%= dimension.id %>"
+                  href="#dimension-<%= dimension["id_dimension"] %>"
                   class="dimensiones-link <%= 'is-active' if i == 0 %>"
                   data-dimension-link="true"
-                  data-target="dimension-<%= dimension.id %>"
+                  data-target="dimension-<%= dimension["id_dimension"] %>"
                 >
                   <span class="dimensiones-index"><%= i + 1 %>.</span>
-                  <span class="dimensiones-name"><%= dimension.dimension %></span>
+                  <span class="dimensiones-name"><%= dimension["nombre"] %></span>
                 </a>
               </li>
             <% end %>
@@ -57,11 +57,11 @@
 
       <% if @dimensiones.present? %>
         <% @dimensiones.each_with_index do |dimension, idx| %>
-          <% componentes = (componentes_por_dimension[dimension.id] || []) %>
+          <% componentes = (componentes_por_dimension[dimension["id_dimension"].to_i] || []) %>
 
           <section
             class="dimension-section <%= 'is-visible' if idx == 0 %>"
-            id="dimension-<%= dimension.id %>"
+            id="dimension-<%= dimension["id_dimension"] %>"
           >
             <% if componentes.any? %>
 
@@ -72,9 +72,9 @@
                     type="button"
                     class="componente-tab <%= 'is-active' if c_idx == 0 %>"
                     data-componente-tab="true"
-                    data-target="componente-<%= componente.id %>"
+                    data-target="componente-<%= componente["id_componente"] %>"
                   >
-                    <%= componente.nombre %>
+                    <%= componente["nombre_componente"] %>
                   </button>
                 <% end %>
               </div>
@@ -105,10 +105,12 @@
                 <% componentes.each_with_index do |componente, c_idx| %>
                   <div
                     class="componente-section <%= 'is-visible' if c_idx == 0 %>"
-                    id="componente-<%= componente.id %>"
+                    id="componente-<%= componente["id_componente"] %>"
                   >
-                    <% campos_info = componente.campos.select { |c| c.autoevaluacion.to_i == 0 } %>
-                    <% campos_auto = componente.campos.select { |c| c.autoevaluacion.to_i == 1 } %>
+                    <% campos = (@campos_por_componente[componente["id_componente"].to_i] || []) %>
+                      <% campos_info = campos.select { |c| c.autoevaluacion.to_i == 0 } %>
+                      <% campos_auto = campos.select { |c| c.autoevaluacion.to_i == 1 } %>
+
 
                     <div class="campos-group is-visible" data-campos-group="info">
                       <% if campos_info.any? %>

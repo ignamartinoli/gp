@@ -1,15 +1,21 @@
 module ConvocatoriaHelper
   def get_nombre_titulacion(num)
     case num.to_i
-    when 1 then "Licenciaturas"
-    when 2 then "Ingenierías"
-    when 3 then "Terciarios"
-    when 4 then "Tecnicaturas"
-    when 5 then "Maestrías"
-    when 6 then "Doctorados"
-    else "-"
+    when 3
+      "Carrera de Grado"
+    when 11
+      "Ciclo de Licenciatura"
+    when 12
+      "Técnico Superior"
+    when 5
+      "Maestría"
+    when 6
+      "Doctorado"
+    else
+      "-"
     end
   end
+
 
   def get_nombre_dimension(num)
     case num.to_i

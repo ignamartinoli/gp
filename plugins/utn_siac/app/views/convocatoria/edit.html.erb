@@ -1,43 +1,134 @@
 <div class="div_section">
-
   <h3 class="siac_title">Editar convocatoria</h3>
   <hr>
-  <h3>Parametros generales</h3>
+  <h3>Parámetros generales</h3>
 
-  <%= form_for @convocatoria, url: update_convocatoria_path(@convocatoria), method: :patch do |f| %>
+  <%= form_with url: update_convocatoria_path(params[:id]),
+      scope: :convocatoria,
+      method: :patch,
+      local: true,
+      html: { novalidate: true, onsubmit: 'return validarEditarConvocatoria(event)' } do %>
+
     <div class="field">
-      <%= f.label :resolucion, "Resolución: " %>
-      <%= f.text_field :resolucion %>
+      <%= label_tag "convocatoria[resolucion]", "Resolución: " %>
+      <%= text_field_tag "convocatoria[resolucion]", @convocatoria.resolucion,
+            class: "form-control",
+            onkeyup: "validarResolucionEdit(this.form)" %>
     </div>
+
     <div class="field">
-      <%= f.label :nombre, "Nombre: " %>
-      <%= f.text_field :nombre %>
+      <%= label_tag "convocatoria[nombre]", "Nombre: " %>
+      <%= text_field_tag "convocatoria[nombre]", @convocatoria.nombre,
+            class: "form-control",
+            oninput: "limpiarErrores(document.querySelector('.errorNombre'))" %>
     </div>
+
+    <div class="error-container">
+      <div class="errorResolucion"></div>
+      <div class="errorNombre"></div>
+    </div>
+
     <div class="field">
-      <%= f.label :titulaciones, "Titulación: " %>
-      <%= f.select :titulaciones,
-               options_for_select(@titulaciones, @convocatoria.titulaciones) %>
+      <%= label_tag "convocatoria[titulaciones]", "Titulación: " %>
+      <%= select_tag "convocatoria[titulaciones]",
+            options_for_select(@titulaciones, @convocatoria.titulaciones),
+            class: "form-select",
+            disabled: true %>
+      <small style="display:block;color:#666;margin-top:4px;">
+        (No editable)
+      </small>
     </div>
-    <label>Fecha:</label>
+
+    <label>Fechas:</label>
     <div class="form_row">
       <div class="field">
-        <%= f.label :fecha_inicio, "Desde: " %>
-        <%= f.date_field :fecha_inicio %>
+        <%= label_tag "convocatoria[fecha_inicio]", "Desde: " %>
+        <%= date_field_tag "convocatoria[fecha_inicio]", @convocatoria.fecha_inicio,
+              class: "form-control",
+              disabled: true %>
       </div>
+
       <div class="field">
-        <%= f.label :fecha_hasta, "Hasta:" %>
-        <%= f.date_field :fecha_hasta %>
+        <%= label_tag "convocatoria[fecha_hasta]", "Hasta: " %>
+        <%= date_field_tag "convocatoria[fecha_hasta]", @convocatoria.fecha_hasta,
+              class: "form-control",
+              disabled: true %>
       </div>
     </div>
-    <div class="actions">
-      <%= f.submit "Actualizar Convocatoria" %>
+
+    <hr>
+    <h3>Fechas intermedias (EDITABLES)</h3>
+
+    <div class="form_row">
+      <div class="field">
+        <%= label_tag "convocatoria[fecha_fin_capacitacion]", "Fin capacitación:" %>
+        <%= date_field_tag "convocatoria[fecha_fin_capacitacion]", @convocatoria.fecha_fin_capacitacion,
+              class: "form-control",
+              onchange: "limpiarErrores(document.querySelector('.errorFechaFinCapacitacion'))" %>
+      </div>
+
+      <div class="field">
+        <%= label_tag "convocatoria[fecha_fin_carga]", "Fin carga:" %>
+        <%= date_field_tag "convocatoria[fecha_fin_carga]", @convocatoria.fecha_fin_carga,
+              class: "form-control",
+              onchange: "limpiarErrores(document.querySelector('.errorFechaFinCarga'))" %>
+      </div>
+    </div>
+
+    <div class="error-container">
+      <div></div>
+      <div class="errorFechaFinCapacitacion"></div>
+      <div class="errorFechaFinCarga"></div>
+    </div>
+
+    <div class="form_row">
+      <div class="field">
+        <%= label_tag "convocatoria[fecha_fin_revision]", "Fin revisión:" %>
+        <%= date_field_tag "convocatoria[fecha_fin_revision]", @convocatoria.fecha_fin_revision,
+              class: "form-control",
+              onchange: "limpiarErrores(document.querySelector('.errorFechaFinRevision'))" %>
+      </div>
+
+      <div class="field">
+        <%= label_tag "convocatoria[fecha_fin_correcciones]", "Fin correcciones:" %>
+        <%= date_field_tag "convocatoria[fecha_fin_correcciones]", @convocatoria.fecha_fin_correcciones,
+              class: "form-control",
+              onchange: "limpiarErrores(document.querySelector('.errorFechaFinCorrecciones'))" %>
+      </div>
+    </div>
+
+    <div class="error-container">
+      <div></div>
+      <div class="errorFechaFinRevision"></div>
+      <div class="errorFechaFinCorrecciones"></div>
+    </div>
+
+    <div class="form_row">
+      <div class="field">
+        <%= label_tag "convocatoria[fecha_fin_auditoria]", "Fin auditoría:" %>
+        <%= date_field_tag "convocatoria[fecha_fin_auditoria]", @convocatoria.fecha_fin_auditoria,
+              class: "form-control",
+              onchange: "limpiarErrores(document.querySelector('.errorFechaFinAuditoria'))" %>
+      </div>
+    </div>
+
+    <div class="error-container">
+      <div></div>
+      <div class="errorFechaFinAuditoria"></div>
+      <div></div>
+    </div>
+
+    <div class="actions" style="margin-top:12px;">
+      <button type="submit" id="inputSubmit" class="step-btn">
+        Actualizar Convocatoria
+      </button>
     </div>
   <% end %>
-
 </div>
 
-<%= link_to "Volver a las convocatorias", convocatorias_path %>
+<%= link_to "Volver a las convocatorias", convocatorias_path, class: "siac_button" %>
 
 <% content_for :header_tags do %>
   <%= stylesheet_link_tag "siac.css", plugin: :utn_siac %>
+  <%= javascript_include_tag "convocatoria_edit_validations", plugin: :utn_siac %>
 <% end %>

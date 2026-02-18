@@ -1332,3 +1332,146 @@
 .datos-personales-step div label {
   margin-right: 20px;
 }
+
+
+
+/* ===============================
+   STEP 3 - Convocatoria (CSS nuevo)
+   =============================== */
+
+.step-content[data-step="3"]{
+  --gap-x: 28px;
+  --gap-y: 14px;
+  --label-col: 280px;
+  --input-h: 42px;
+}
+
+.step-content[data-step="3"] h3{
+  margin: 6px 0 18px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+/* Grid real: Col 1 = título bloque, Col 2-3 = inputs */
+.step-content[data-step="3"] .field-container{
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--label-col) minmax(240px, 1fr) minmax(240px, 1fr);
+  column-gap: var(--gap-x);
+  row-gap: var(--gap-y);
+  align-items: start;
+  margin: 14px 0 6px;
+}
+
+/* Columna “sección” */
+.step-content[data-step="3"] .field--section label{
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.step-content[data-step="3"] .field--section small{
+  display: block;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+/* Celdas vacías para mantener 2 columnas */
+.step-content[data-step="3"] .field--empty{
+  min-height: 1px;
+}
+
+/* Normalizamos .field (tu .field actual es flex + width:33%) */
+.step-content[data-step="3"] .field{
+  width: auto;
+  display: block;
+  padding: 0;
+}
+
+/* Labels arriba del input (más legible) */
+.step-content[data-step="3"] .field > label{
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: #111827;
+}
+
+/* Inputs más “pro” */
+.step-content[data-step="3"] input[type="date"]{
+  width: 60%;
+  height: var(--input-h);
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  border-bottom: 1px solid #d1d5db; /* pisa tu border-bottom negro */
+  transition: border-color .15s ease, box-shadow .15s ease;
+  margin-left: 0% !important;
+}
+
+.step-content[data-step="3"] input[type="date"]:focus{
+  outline: none;
+  border-color: hsla(var(--header_hue),var(--header_saturation), var(--header_brightness10),1);
+  box-shadow: 0 0 0 4px rgba(0,0,0,.06);
+}
+
+/* Error container alineado a la misma grilla */
+.step-content[data-step="3"] .error-container{
+  width: 100%;
+  display: grid;
+  grid-template-columns: var(--label-col) minmax(240px, 1fr) minmax(240px, 1fr);
+  column-gap: var(--gap-x);
+  margin: 0 0 10px;
+}
+
+.step-content[data-step="3"] .error-container > div{
+  width: auto;
+  padding: 0;
+  min-height: 16px;
+  font-weight: 700;
+  font-size: 12px;
+  color: #dc2626;
+  display: block;
+}
+
+/* Bloque final (Fin convocatoria) un poco destacado */
+.step-content[data-step="3"] .field-container--final{
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Responsive */
+@media (max-width: 980px){
+  .step-content[data-step="3"] .field-container,
+  .step-content[data-step="3"] .error-container{
+    grid-template-columns: 1fr;
+  }
+
+  .step-content[data-step="3"] .field--empty{
+    display: none;
+  }
+}
+
+
+/* debajo de cada input */
+.step-content[data-step="3"] .field{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.step-content[data-step="3"] .field-error{
+  min-height: 16px;      /* reserva espacio y evita saltos */
+  font-size: 12px;
+  font-weight: 700;
+  color: #dc2626;
+}
+
+.step-content[data-step="3"] .input-error{
+  border-color: #dc2626 !important;
+  background: #fff5f5;
+}

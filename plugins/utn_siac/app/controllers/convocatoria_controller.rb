@@ -8,225 +8,718 @@ class ConvocatoriaController < ApplicationController
   
   helper ComponenteHelper
   include ConvocatoriaHelper
- def new
-  @convocatoria = Convocatoria.new
-  @titulaciones = [
-   ['Licenciaturas', 1],
-   ['Ingenierías', 2],
-   ['Terciarios', 3],
-   ['Tecnicaturas', 4],
-   ['Maestrías', 5],
-   ['Doctorados', 6]
-  ]
 
-  @especialidades = Especialidad.where(titulacion: 0)
-  @componentes = Componente.where(activo: 1).order(:dimension_id)
-  @sedes = Sede
-           .left_joins(:regional) # para poder mostrar sede.regional en el parcial
-           .includes(:regional)
-           .distinct
-           .order('sedes.nombre ASC')
+  before_action :load_titulaciones, only: [:edit, :update]
 
-  respond_to do |format|
-   format.html # Vista normal
-   format.js do
-    # Aquí se pasan ambos partials en un solo bloque
-    render partial: 'especialidades', locals: { especialidades: @especialidades }
-    # Si necesitas el partial de sedes también en la misma respuesta,
-    # lo puedes manejar dentro del mismo bloque de format.js
-    render partial: 'sedes', locals: { sedes: @sedes }
-   end
+  def load_titulaciones
+    @titulaciones = [
+      ['Carrera de Grado', 3],
+      ['Ciclo de Licenciatura', 11],
+      ['Tecnico Superior', 12],
+      ['Maestría', 5],
+      ['Doctorado', 6]
+    ]
   end
- end
+  private :load_titulaciones
 
- def cargar_especialidades
-  titulacion = params[:titulacion] # Ahora obtenemos directamente de la URL
-
-  if titulacion.present?
-   especialidades = Especialidad.where(titulacion: titulacion, activo: true).order(:nombre)
-  else
-   render json: { error: 'El parámetro titulacion es requerido.' }, status: :bad_request
-   return
+  
+  ComponenteDto = Struct.new(:id, :nombre, :dimension_id, keyword_init: true)
+  
+  def new
+    preparar_form_nueva_convocatoria
+    render :new
   end
 
-  render partial: 'especialidades', locals: { especialidades: especialidades }
- end
+  def cargar_especialidades
+    tipo = params[:id].presence || params[:titulacion].presence
+
+    Rails.logger.info("[SIAC] cargar_especialidades ENTER tipo=#{tipo.inspect} params=#{params.to_unsafe_h.inspect}")
+
+    return render(json: { error: "tipo_especialidad requerido" }, status: :bad_request) if tipo.blank?
+
+    rows = Siac::SiacRepository.query(
+      Siac::SiacRepository.send(
+        :sanitize_sql_array,
+        [%Q{
+          SELECT id_especialidad, letra, nombre
+          FROM public."SPYP_Especialidades"
+          WHERE tipo_especialidad = ?
+            AND activa = B'1'
+          ORDER BY nombre
+        }, tipo.to_i]
+      )
+    )
+
+    Rails.logger.info("[SIAC] cargar_especialidades rows=#{rows.size}")
+
+    render partial: "especialidades", locals: { especialidades: rows }
+  end
+
 
   def cargar_sedes
-    especialidades = Array(params[:especialidades]).reject(&:blank?)
+    especialidad_ids = Array(params[:especialidades]).reject(&:blank?).map(&:to_i).uniq
+    return render partial: "sedes", locals: { sedes: [] } if especialidad_ids.empty?
 
-    sedes = []
+    sedes_by_id = {}
 
-    if especialidades.present?
-      conn = SiacPgBase.connection
-
-      especialidades.each do |especialidad_id|
-        result = conn.exec_query(
-          'SELECT * FROM SIAC_BUSCAR_UNIDADES_ACADEMICAS_X_CARRERA($1)',
-          'SQL',
-          [[nil, especialidad_id.to_i]]
+    especialidad_ids.each do |especialidad_id|
+      rows = Siac::SiacRepository.query(
+        Siac::SiacRepository.send(
+          :sanitize_sql_array,
+          [%Q{ SELECT * FROM SIAC_BUSCAR_UNIDADES_ACADEMICAS_X_CARRERA(?) }, especialidad_id]
         )
+      )
 
-        result.rows.each_with_index do |row, i|
-          sedes << {
-            id_facultad: row[result.columns.index('id_facultad')],
-            nombre: row[result.columns.index('nombre')],
-            extensiones: row[result.columns.index('extensiones')]
-          }
-        end
+      rows.each do |r|
+        id_facultad = r["id_facultad"]
+        sedes_by_id[id_facultad] ||= {
+          id_facultad: id_facultad,
+          nombre: r["nombre"],
+          extensiones: r["extensiones"]
+        }
       end
     end
 
-    sedes.uniq! { |s| s[:id_facultad] }
-
-    render partial: 'sedes', locals: { sedes: sedes }
+    render partial: "sedes", locals: { sedes: sedes_by_id.values }
   end
 
 
- def index
-  today = Date.today
-  # 1) Actualizar convocatorias vencidas
-  Convocatoria.where("fecha_hasta < ? AND estado != 'Cerrada'", today)
-        .update_all(estado: "Cerrada")
+  def cerrar_vencidas_siac(today)
+    cerrada_id = Siac::SiacRepository.query(%Q{
+      SELECT id_estado_convocatoria
+      FROM public."SIAC_EstadosConvocatorias"
+      WHERE nombre_estado = 'Cerrada'
+      LIMIT 1
+    }).dig(0, "id_estado_convocatoria")
 
-  user_id = User.current.id
+    return if cerrada_id.blank?
 
-  # 2) Armar la base filtrada
-  if params[:mostrar_cerradas] == "true"
-    scope = Convocatoria.where(estado: "Cerrada")
-  else
-    scope = Convocatoria.where.not(estado: "Cerrada")
-  end
-
-
-	# 3) Aplicar búsqueda, paginación y orden
-  @convocatoria = scope
-                  .search(params[:q]) # <-- filtro por Resolución o Nombre
-                  .page(params[:page])
-                  .per(5)
-                  .order(
-                   ActiveRecord::Base.sanitize_sql_array(
-                    [
-                     'CASE WHEN id IN (SELECT convocatorias_id FROM bookmarks WHERE user_id = ?) THEN 0 ELSE 1 END', user_id
-                    ]
-                   )
-                  )
-                  .order(fecha_creacion: :desc)
- end
-
- def create
-  # Asegúrate de que los parámetros estén siendo impresos correctamente
-  logger.debug "Parametros recibidos: #{params.inspect}"
-
-  @convocatoria = Convocatoria.new(convocatoria_params)
-  @convocatoria.etapa = 'Nueva'
-
-  # Limpiar valores vacíos de sedes_codigos, dimension_codigos y especialidad_codigos
-  sedes_codigos = params[:sedes_codigos]&.reject(&:blank?) || []
-  componentes_codigos = params[:componentes_codigos]&.reject(&:blank?) || []
-  especialidades_codigos = params[:especialidad_codigos]&.reject(&:blank?) || []
-
-  logger.debug "Sedes seleccionadas después de limpieza: #{sedes_codigos}"
-  logger.debug "Componentes seleccionadas después de limpieza: #{componentes_codigos}"
-  logger.debug "Especialidades seleccionadas después de limpieza: #{especialidades_codigos}"
-
-  sedes_ids        = params[:sedes_codigos]&.reject(&:blank?) || []          # consider renaming to sedes_ids if truly IDs
-  componentes_ids  = params[:componentes_codigos]&.reject(&:blank?) || []
-  especialidad_ids = params[:especialidad_ids]&.reject(&:blank?) || []       # <-- now IDs
-
-  # Asociar las sedes, dimensiones y especialidades a la convocatoria
-  @convocatoria.sedes          = Sede.where(id: sedes_ids)
-  @convocatoria.componentes    = Componente.where(id: componentes_ids)
-  @convocatoria.especialidades = Especialidad.where(id: especialidad_ids)
-
-  logger.debug "Convocatoria con asociaciones antes de guardarse: #{@convocatoria.inspect}"
-
-  if @convocatoria.save
-    Siac::CrearClientesPorConvocatoria.new(@convocatoria).call
-
-   redirect_to convocatorias_path, notice: 'Convocatoria creada con éxito.'
-  else
-   logger.debug "Errores en la convocatoria: #{@convocatoria.errors.full_messages}"
-   flash[:error] = @convocatoria.errors.full_messages.to_sentence
-   render :new
-  end
- end
-
- def destroy
-  @convocatoria = Convocatoria.find(params[:id])
-  if @convocatoria.destroy
-   redirect_to convocatorias_path, notice: 'Convocatoria eliminada correctamente.'
-  else
-   redirect_to convocatorias_path, alert: 'Error al eliminar la convocatoria.'
-  end
- end
-
- def preview
-  @convocatoria = Convocatoria.find(params[:id])
-
-  @dimensiones = Dimension
-                 .joins(componentes: :convocatorias)
-                 .where(convocatorias: { id: @convocatoria.id })
-                 .distinct
-                 .order(:id)
- end
-
-def show
-  @convocatoria = Convocatoria.find(params[:id])
-
-  @sedes = @convocatoria
-           .sedes
-           .includes(:regional)
-           .order('regionales.nombre ASC, sedes.nombre ASC')
-           .page(params[:page])
-           .per(5)
-
-
-  @dimensiones = Dimension
-    .joins(componentes: :convocatorias)
-    .where(convocatorias: { id: @convocatoria.id })
-    .distinct
-
-  @clientes_por_regional = {}
-
-  siac_clientes = SiacCliente
-    .joins(:siac_convocatoria_clientes)
-    .where(
-      siac_convocatoria_clientes: { convocatoria_id: @convocatoria.id },
-      parent_id: nil
+    vencidas = Siac::SiacRepository.query(
+      Siac::SiacRepository.send(
+        :sanitize_sql_array,
+        [%Q{
+          SELECT id_convocatoria
+          FROM public."SIAC_Convocatorias"
+          WHERE fecha_fin_convocatoria < ?
+            AND id_estado_actual <> ?
+        }, today, cerrada_id]
+      )
     )
-    .includes(:user)
 
-  siac_clientes.each do |cliente|
-    @clientes_por_regional[cliente.regional_id] = cliente.user
+    vencidas.each do |row|
+      Siac::SiacRepository.procedure(
+        "SIAC_ACTUALIZAR_ESTADO_CONVOCATORIAS",
+        nil,
+        row["id_convocatoria"].to_i,
+        cerrada_id.to_i
+      )
+    end
   end
-end
+
+  def index
+    require "date"
+
+    # Traer todo (no solo activas), y luego filtrar canceladas
+    rows = Siac::SiacRepository.function_typed(
+      "public.siac_buscar_convocatorias_x_parametros",
+      [
+        { value: false, cast: "boolean" }, # i_solo_activas
+        { value: nil,   cast: "int" },     # i_estado_actual
+        { value: nil,   cast: "date" },    # i_fecha_desde
+        { value: nil,   cast: "date" }     # i_fecha_hasta
+      ]
+    )
+
+    # Filtrar las canceladas
+    rows = rows.reject do |r|
+      r["nombre_estado_actual"].to_s.strip.downcase == "cancelada"
+    end
+
+    # Buscador
+    q = params[:q].to_s.strip.downcase
+    if q.present?
+      rows = rows.select do |r|
+        r["numero_resolucion"].to_s.downcase.include?(q) ||
+          r["nombre_convocatoria"].to_s.downcase.include?(q)
+      end
+    end
+
+    dtos = rows.map do |r|
+      Siac::ConvocatoriaDto.new(
+        id: r["id_convocatoria"],
+        resolucion: r["numero_resolucion"],
+        nombre: r["nombre_convocatoria"],
+        fecha_inicio: parse_date(r["fecha_inicio_convocatoria"]),
+        fecha_hasta:  parse_date(r["fecha_fin_convocatoria"]),
+        titulaciones: r["id_tipo_especialidad"],
+        tipo_especialidad: r["tipo_especialidad"],
+        etapa:  (r["nombre_estado_actual"].presence || "Nueva"),
+        estado: (r["nombre_estado_actual"])
+      )
+    end
 
 
- # Nueva acción edit
- def edit
-  @convocatoria = Convocatoria.find(params[:id])
-  @titulaciones = [
-   ['Licenciaturas', 1],
-   ['Ingenierías', 2],
-   ['Terciarios', 3],
-   ['Tecnicaturas', 4],
-   ['Maestrías', 5],
-   ['Doctorados', 6]
-  ]
-  # @titulaciones = %w[Licenciaturas Ingenierias Terciarios Tecnicaturas Especialidades Doctorados]
- end
+    dtos.sort_by! { |x| [x.fecha_inicio || Date.new(1900,1,1), x.id.to_i] }
+    dtos.reverse!
 
- # Acción update
- def update
-  @convocatoria = Convocatoria.find(params[:id])
-
-  if @convocatoria.update(convocatoria_params)
-   redirect_to convocatorias_path, notice: 'Convocatoria actualizada con éxito.'
-  else
-   render :edit
+    @convocatoria = Kaminari.paginate_array(dtos).page(params[:page]).per(5)
   end
- end
+
+
+  def create
+    # 1) params tolerantes: si viene scope :convocatoria OK, si no, fallback
+    raw = params[:convocatoria].presence || params
+
+    # 2) Campos base
+    numero_res = raw[:resolucion].to_s.strip
+    nombre     = raw[:nombre].to_s.strip
+    tipo_esp   = raw[:titulaciones].to_i
+
+    # Fechas
+    f_ini = parse_date_param(raw[:fecha_inicio])
+    f_fin = parse_date_param(raw[:fecha_hasta])
+
+    # 3) Arrays: soporta ambas formas de nombres (convocatoria[...][] o sueltos)
+    especialidades =
+      Array(raw[:especialidad_ids]).presence ||
+      Array(params[:especialidad_ids])
+
+    componentes =
+      Array(raw[:componentes_codigos]).presence ||
+      Array(params[:componentes_codigos])
+
+    sedes =
+      Array(raw[:sedes_codigos]).presence ||
+      Array(params[:sedes_codigos])
+
+    especialidades = Array(especialidades).reject(&:blank?).map(&:to_i).uniq
+    componentes    = Array(componentes).reject(&:blank?).map(&:to_i).uniq
+    regionales     = Array(sedes).reject(&:blank?).map(&:to_i).uniq
+
+    # 4) Validaciones mínimas (ajustá si querés)
+    errores = []
+    errores << "La resolución es obligatoria." if numero_res.blank?
+    errores << "El nombre es obligatorio." if nombre.blank?
+    errores << "La titulación es obligatoria." if tipo_esp <= 0
+    errores << "La fecha de inicio es obligatoria." if f_ini.blank?
+    errores << "La fecha de fin es obligatoria." if f_fin.blank?
+    errores << "Seleccioná al menos una especialidad." if especialidades.empty?
+    errores << "Seleccioná al menos una sede." if regionales.empty?
+    errores << "Seleccioná al menos un componente." if componentes.empty?
+
+    if errores.any?
+      flash.now[:error] = errores.join(" ")
+      preparar_form_nueva_convocatoria
+      return render :new
+    end
+
+
+    # 5) Fechas intermedias: tu UI las valida, pero la SP las requiere.
+    # Usamos los valores de UI si están, sino colapsamos a f_fin.
+    # (si no tenés estos campos en el form, raw[...] será nil)
+    f_fin_capacitacion = parse_date_param(raw[:fecha_fin_capacitacion]) || f_fin
+    f_fin_carga        = parse_date_param(raw[:fecha_fin_carga])        || f_fin
+    f_fin_revision     = parse_date_param(raw[:fecha_fin_revision])     || f_fin
+    f_fin_correcciones = parse_date_param(raw[:fecha_fin_correcciones]) || f_fin
+    f_fin_auditoria    = parse_date_param(raw[:fecha_fin_auditoria])    || f_fin
+
+    # 6) Sedes: hoy mandás sólo regionales. Extensiones queda nil.
+    extensiones = nil
+
+    # 7) Usuario
+    user_id = User.current.id
+
+    Rails.logger.info("[SIAC][CREATE] res=#{numero_res.inspect} nombre=#{nombre.inspect} tipo=#{tipo_esp} user=#{user_id} " \
+                      "ini=#{f_ini} fin=#{f_fin} esp=#{especialidades.size} comp=#{componentes.size} sedes=#{regionales.size}")
+
+    # 8) Llamada a SP
+    resultado = nil
+        begin
+    resultado = nil
+
+    typed = [
+      { value: resultado, cast: "integer" },                         # INOUT p_resultado
+      { value: numero_res, cast: "character varying" },
+      { value: nombre,     cast: "character varying" },
+      { value: tipo_esp,   cast: "integer" },
+      { value: user_id,    cast: "integer" },
+      { value: f_ini,      cast: "date" },
+      { value: f_fin_capacitacion, cast: "date" },
+      { value: f_fin_carga,        cast: "date" },
+      { value: f_fin_revision,     cast: "date" },
+      { value: f_fin_correcciones, cast: "date" },
+      { value: f_fin_auditoria,    cast: "date" },
+      { value: f_fin,              cast: "date" },
+
+      # Arrays -> literal + cast
+      { value: Siac::SiacRepository.pg_int_array_literal(especialidades), cast: "integer[]" },
+      { value: Siac::SiacRepository.pg_int_array_literal(componentes),    cast: "integer[]" },
+      { value: Siac::SiacRepository.pg_int_array_literal(regionales),     cast: "integer[]" },
+
+      # extensiones: varchar[] o NULL
+      { value: Siac::SiacRepository.pg_varchar_array_literal(extensiones), cast: "character varying[]" }
+    ]
+
+    resultado = Siac::SiacRepository.procedure_typed(
+      "public.siac_insertar_convocatorias",
+      typed
+    )
+    rescue => e
+      Rails.logger.error("[SIAC][CREATE] ERROR procedure: #{e.class}: #{e.message}")
+      Rails.logger.error(e.backtrace.join("\n"))
+      flash.now[:error] = "Error al crear la convocatoria (procedure)."
+      preparar_form_nueva_convocatoria
+      return render :new
+    end
+
+    # 9) Normalizar retorno (Array/Hash/scalar)
+    row =
+      if resultado.is_a?(Array)
+        resultado.first
+      else
+        resultado
+      end
+
+    new_id =
+      if row.is_a?(Hash)
+        row["p_resultado"] || row[:p_resultado] || row["resultado"] || row[:resultado]
+      else
+        row
+      end
+
+    new_id_i = new_id.to_i
+
+    Rails.logger.info("[SIAC][CREATE] procedure resultado=#{resultado.inspect} new_id=#{new_id.inspect} new_id_i=#{new_id_i}")
+
+    if new_id_i > 0
+      redirect_to convocatorias_path, notice: "Convocatoria creada con éxito."
+    else
+      flash.now[:error] = "No se pudo crear la convocatoria."
+      preparar_form_nueva_convocatoria
+      render :new
+    end
+  end
+
+
+  def destroy
+    id = params[:id].to_i
+
+    cancelada_id = siac_estado_id("Cancelada") || siac_estado_id("Cerrada")
+    return redirect_to(convocatorias_path, alert: "No existe estado Cancelada/Cerrada en SIAC_EstadosConvocatorias") if cancelada_id.blank?
+
+    res = Siac::SiacRepository.procedure(
+      "public.siac_actualizar_estado_convocatorias",
+      nil,
+      id,
+      cancelada_id.to_i
+    )
+
+    row = res.is_a?(Array) ? res.first : res
+    ok = row.is_a?(Hash) ? row["p_resultado"].to_i == 1 : row.to_i == 1
+
+    if ok
+      redirect_to convocatorias_path, notice: "Convocatoria cancelada correctamente."
+    else
+      redirect_to convocatorias_path, alert: "Error al cancelar la convocatoria."
+    end
+  end
+
+
+
+  def preview
+    id = params[:id].to_i
+
+    # 1) Convocatoria (si la usás arriba del template)
+    @convocatoria = Siac::SiacRepository.query(
+      Siac::SiacRepository.send(
+        :sanitize_sql_array,
+        [%Q{
+          SELECT c.*,
+                e.nombre_estado
+          FROM public."SIAC_Convocatorias" c
+          JOIN public."SIAC_EstadosConvocatorias" e
+            ON e.id_estado = c.id_estado_actual
+          WHERE c.id_convocatoria = ?
+          LIMIT 1
+        }, id]
+      )
+    ).first
+
+    # 2) Dimensiones del set de componentes de esta convocatoria
+    @dimensiones = Siac::SiacRepository.query(
+      Siac::SiacRepository.send(
+        :sanitize_sql_array,
+        [%Q{
+          SELECT DISTINCT d.id_dimension, d.nombre
+          FROM public."SIAC_ConvocatoriasXComponentes" cx
+          JOIN public."SIAC_Componentes" c ON c.id_componente = cx.id_componente
+          JOIN public."SIAC_Dimensiones" d ON d.id_dimension = c.id_dimension
+          WHERE cx.id_convocatoria = ?
+          ORDER BY d.id_dimension
+        }, id]
+      )
+    )
+
+    # 3) Componentes (los que pintás como tabs)
+    @componentes = Siac::SiacRepository.query(
+      Siac::SiacRepository.send(
+        :sanitize_sql_array,
+        [%Q{
+          SELECT d.id_dimension,
+                d.nombre AS nombre_dimension,
+                c.id_componente,
+                c.nombre AS nombre_componente
+          FROM public."SIAC_ConvocatoriasXComponentes" cx
+          JOIN public."SIAC_Componentes" c ON c.id_componente = cx.id_componente
+          JOIN public."SIAC_Dimensiones" d ON d.id_dimension = c.id_dimension
+          WHERE cx.id_convocatoria = ?
+          ORDER BY d.id_dimension, c.id_componente
+        }, id]
+      )
+    )
+
+    # 4) Campos asociados a la convocatoria (función)
+    campos_rows = Siac::SiacRepository.query(
+      Siac::SiacRepository.send(:sanitize_sql_array, [%Q{
+        SELECT * FROM SIAC_BUSCAR_CAMPOS_CONVOCATORIAS(?)
+      }, id])
+    )
+
+    # 5) Tipos de campo (clave para render_field_for)
+    tipos_rows = Siac::SiacRepository.query(%Q{
+      SELECT id_tipo, nombre, descripcion, activo
+      FROM public."SIAC_TiposCampo"
+    })
+
+    tipos_por_id = tipos_rows.each_with_object({}) do |t, h|
+      h[t["id_tipo"].to_i] = OpenStruct.new(
+        id: t["id_tipo"].to_i,
+        nombre: t["nombre"],
+        descripcion: t["descripcion"],
+        activo: (t["activo"].to_s == "1")
+      )
+    end
+
+    # 6) Opciones por campo (para selección única/múltiple)
+    campo_ids = campos_rows.map { |r| r["id_campo"].to_i }.uniq
+    opciones_por_campo = Hash.new { |h, k| h[k] = [] }
+
+    if campo_ids.any?
+      opciones_rows = Siac::SiacRepository.query(
+        Siac::SiacRepository.send(
+          :sanitize_sql_array,
+          [%Q{
+            SELECT id_opcion, id_campo, nombre_opcion, activo
+            FROM public."SIAC_OpcionesCampo"
+            WHERE id_campo IN (?)
+            ORDER BY id_campo, id_opcion
+          }, campo_ids]
+        )
+      )
+
+      opciones_rows.each do |op|
+        opciones_por_campo[op["id_campo"].to_i] << op
+      end
+    end
+
+    # 7) Armar estructura: @campos_por_componente[componente_id] = [campo1, campo2...]
+    @campos_por_componente = Hash.new { |h, k| h[k] = [] }
+
+    campos_rows.each do |r|
+      campo_id = r["id_campo"].to_i
+      comp_id  = r["id_componente"].to_i
+
+      campo = OpenStruct.new(
+        id: campo_id,
+        id_campo: campo_id,
+        id_componente: comp_id,
+
+        nombre: r["nombre_campo"],
+        nombre_campo: r["nombre_campo"],
+        pregunta: r["pregunta_orientadora"],
+        pregunta_orientadora: r["pregunta_orientadora"],
+
+        es_obligatorio: (r["es_obligatorio"].to_s == "1"),
+        permite_archivos: (r["permite_archivos"].to_s == "1"),
+        autoevaluacion: (r["es_autovaluacion"].to_s == "1") ? 1 : 0,
+
+        id_tipo_campo: r["id_tipo_campo"].to_i,
+        tipo_campo: tipos_por_id[r["id_tipo_campo"].to_i],
+
+        id_campo_padre: r["id_campo_padre"]&.to_i,
+        activo: (r["activo"].to_s == "1"),
+
+        # esto es lo que tu helper normalize_opciones usa primero:
+        opciones_campos: Array(opciones_por_campo[campo_id]).map do |op|
+          OpenStruct.new(
+            id: op["id_opcion"].to_i,
+            nombre_opcion: op["nombre_opcion"],
+            activo: (op["activo"].to_s == "1")
+          )
+        end
+      )
+
+      @campos_por_componente[comp_id] << campo
+    end
+  end
+
+
+
+
+  def show
+    id = params[:id].to_i
+
+    # 1) Traer convocatoria + estado (join)
+    row = Siac::SiacRepository.query(
+      Siac::SiacRepository.send(
+        :sanitize_sql_array,
+        [%Q{
+          SELECT c.id_convocatoria,
+                c.numero_resolucion,
+                c.nombre_convocatoria,
+                c.id_tipo_especialidad,
+                c.fecha_inicio_convocatoria,
+                c.fecha_fin_convocatoria,
+                e.nombre_estado AS nombre_estado_actual
+          FROM public."SIAC_Convocatorias" c
+          JOIN public."SIAC_EstadosConvocatorias" e ON e.id_estado = c.id_estado_actual
+          WHERE c.id_convocatoria = ?
+          LIMIT 1
+        }, id]
+      )
+    ).first
+
+    return redirect_to(convocatorias_path, alert: "No existe la convocatoria") if row.blank?
+
+    # 2) Construir objeto para la vista (NO hash)
+    @convocatoria = OpenStruct.new(
+      id: row["id_convocatoria"],
+      resolucion: row["numero_resolucion"],
+      nombre: row["nombre_convocatoria"],
+      titulaciones: row["id_tipo_especialidad"],
+      fecha_inicio: parse_date(row["fecha_inicio_convocatoria"]),
+      fecha_hasta:  parse_date(row["fecha_fin_convocatoria"]),
+      etapa: (row["nombre_estado_actual"].presence || "Nueva"),
+      estado: row["nombre_estado_actual"]
+    )
+
+    # 3) Sedes (regionales + extensiones) para la tabla del show
+    #    La vista espera: sede.nombre y sede.regional&.nombre / sede.regional&.id
+    sedes_rows = Siac::SiacRepository.query(
+      Siac::SiacRepository.send(
+        :sanitize_sql_array,
+        [%Q{
+          SELECT
+            r.id_facultad   AS regional_id,
+            r.nombre        AS regional_nombre,
+            x.id_extension  AS extension_id,
+            x.nombre        AS extension_nombre
+          FROM public."SIAC_Convocatorias" c
+          LEFT JOIN public."SIAC_ConvocatoriasXRegionales"  cr ON cr.id_convocatoria = c.id_convocatoria
+          LEFT JOIN public."SPYP_Regionales"                r  ON r.id_facultad = cr.id_facultad
+          LEFT JOIN public."SIAC_ConvocatoriasXExtensiones" cx ON cx.id_convocatoria = c.id_convocatoria
+          LEFT JOIN public."SPYP_ExtensionesAulicas"        x  ON x.id_extension = cx.id_extension
+          WHERE c.id_convocatoria = ?
+          ORDER BY r.nombre NULLS LAST, x.nombre NULLS LAST
+        }, id]
+      )
+    )
+
+    sedes = sedes_rows.map do |sr|
+      regional =
+        if sr["regional_id"].present?
+          OpenStruct.new(id: sr["regional_id"].to_i, nombre: sr["regional_nombre"])
+        end
+
+      # Si hay extensión, mostramos la extensión; si no, mostramos "-" (pero mantenemos regional)
+      OpenStruct.new(
+        id: (sr["extension_id"] || sr["regional_id"]).to_i,
+        nombre: (sr["extension_nombre"].presence || "-"),
+        regional: regional
+      )
+    end
+
+    # Evitar duplicados por joins (mismo regional/extensión repetidos)
+    sedes.uniq! { |s| [s.regional&.id, s.nombre] }
+
+    # 4) Usuarios por regional (esto depende de tu modelo/local DB)
+    #    Tu vista usa @clientes_por_regional[regional_id] => usuario (con firstname/lastname)
+    regional_ids = sedes.map { |s| s.regional&.id }.compact.uniq
+
+    # Ajustá esta parte a tu modelo real. Te dejo una implementación segura:
+    @clientes_por_regional = {}
+
+    # 5) Paginación como espera la vista
+    @sedes = Kaminari.paginate_array(sedes).page(params[:page]).per(10)
+  end
+
+
+
+  def edit
+    id = params[:id].to_i
+
+    @titulaciones = [
+      ['Carrera de Grado', 3],
+      ['Ciclo de Licenciatura', 11],
+      ['Tecnico Superior', 12],
+      ['Maestría', 5],
+      ['Doctorado', 6]
+    ]
+
+    row = Siac::SiacRepository.query(
+      Siac::SiacRepository.send(
+        :sanitize_sql_array,
+        [%Q{
+          SELECT id_convocatoria,
+                numero_resolucion,
+                nombre_convocatoria,
+                id_tipo_especialidad,
+                fecha_inicio_convocatoria,
+                fecha_fin_capacitacion,
+                fecha_fin_carga,
+                fecha_fin_revision,
+                fecha_fin_correcciones,
+                fecha_fin_auditoria,
+                fecha_fin_convocatoria
+          FROM public."SIAC_Convocatorias"
+          WHERE id_convocatoria = ?
+          LIMIT 1
+        }, id]
+      )
+    ).first
+
+    return redirect_to(convocatorias_path, alert: "No existe la convocatoria") if row.blank?
+
+    @convocatoria = OpenStruct.new(
+      id: row["id_convocatoria"],
+      resolucion: row["numero_resolucion"],
+      nombre: row["nombre_convocatoria"],
+      titulaciones: row["id_tipo_especialidad"],
+      fecha_inicio: row["fecha_inicio_convocatoria"],
+      fecha_hasta: row["fecha_fin_convocatoria"],
+      fecha_fin_capacitacion: row["fecha_fin_capacitacion"],
+      fecha_fin_carga: row["fecha_fin_carga"],
+      fecha_fin_revision: row["fecha_fin_revision"],
+      fecha_fin_correcciones: row["fecha_fin_correcciones"],
+      fecha_fin_auditoria: row["fecha_fin_auditoria"]
+    )
+
+    # Solo para mostrar (NO editable): detalle texto
+    @detalle = Siac::SiacRepository.query(
+      Siac::SiacRepository.send(:sanitize_sql_array, [%Q{ SELECT * FROM SIAC_BUSCAR_DETALLE_CONVOCATORIA(?) }, id])
+    ).first
+
+    render :edit
+  end
+
+
+
+  def update
+    id = params[:id].to_i
+
+    p = params.require(:convocatoria).permit(
+      :resolucion, :nombre,
+      :fecha_fin_capacitacion, :fecha_fin_carga, :fecha_fin_revision,
+      :fecha_fin_correcciones, :fecha_fin_auditoria
+    )
+
+    # (Opcional) si también querés bloquear nombre/resolución, borrá estas 2 líneas
+    numero_res = p[:resolucion].to_s.strip
+    nombre     = p[:nombre].to_s.strip
+
+    f_fin_capacitacion = parse_date_param(p[:fecha_fin_capacitacion])
+    f_fin_carga        = parse_date_param(p[:fecha_fin_carga])
+    f_fin_revision     = parse_date_param(p[:fecha_fin_revision])
+    f_fin_correcciones = parse_date_param(p[:fecha_fin_correcciones])
+    f_fin_auditoria    = parse_date_param(p[:fecha_fin_auditoria])
+
+    user_id = User.current.id
+
+    begin
+      # Traigo inicio/fin “reales” para:
+      # 1) no modificarlos
+      # 2) validar rangos de intermedias
+      base = Siac::SiacRepository.query(
+        Siac::SiacRepository.send(
+          :sanitize_sql_array,
+          [%Q{
+            SELECT fecha_inicio_convocatoria, fecha_fin_convocatoria
+            FROM public."SIAC_Convocatorias"
+            WHERE id_convocatoria = ?
+            LIMIT 1
+          }, id]
+        )
+      ).first
+
+      return redirect_to(convocatorias_path, alert: "No existe la convocatoria") if base.blank?
+
+      f_ini = parse_date(base["fecha_inicio_convocatoria"])
+      f_fin = parse_date(base["fecha_fin_convocatoria"])
+
+      # Validaciones básicas de negocio: intermedias dentro de [inicio, fin]
+      intermedias = {
+        "Capacitación" => f_fin_capacitacion,
+        "Carga"        => f_fin_carga,
+        "Revisión"     => f_fin_revision,
+        "Correcciones" => f_fin_correcciones,
+        "Auditoría"    => f_fin_auditoria
+      }
+
+      invalid = intermedias.select { |_k, v| v.blank? || v < f_ini || v > f_fin }
+      if invalid.any?
+        flash.now[:error] = "Fechas intermedias inválidas (deben estar entre #{f_ini} y #{f_fin})."
+        @convocatoria = OpenStruct.new(id: id, resolucion: numero_res, nombre: nombre)
+        return render :edit
+      end
+
+      # (Opcional) validar orden lógico entre intermedias
+      ordered = [f_fin_capacitacion, f_fin_carga, f_fin_revision, f_fin_correcciones, f_fin_auditoria]
+      if ordered != ordered.sort
+        flash.now[:error] = "Las fechas intermedias deben estar en orden cronológico."
+        @convocatoria = OpenStruct.new(id: id, resolucion: numero_res, nombre: nombre)
+        return render :edit
+      end
+
+      # Update SOLO de lo permitido.
+      # Nota: NO tocamos id_tipo_especialidad, especialidades, sedes, componentes, inicio, fin.
+      Siac::SiacRepository.query(
+        Siac::SiacRepository.send(
+          :sanitize_sql_array,
+          [%Q{
+            UPDATE public."SIAC_Convocatorias"
+            SET numero_resolucion       = ?,
+                nombre_convocatoria     = ?,
+                id_usuario_modificacion = ?,
+                fecha_fin_capacitacion  = ?,
+                fecha_fin_carga         = ?,
+                fecha_fin_revision      = ?,
+                fecha_fin_correcciones  = ?,
+                fecha_fin_auditoria     = ?
+            WHERE id_convocatoria = ?
+          },
+            numero_res,
+            nombre,
+            user_id,
+            f_fin_capacitacion,
+            f_fin_carga,
+            f_fin_revision,
+            f_fin_correcciones,
+            f_fin_auditoria,
+            id
+          ]
+        )
+      )
+
+      redirect_to convocatorias_path, notice: "Convocatoria actualizada con éxito."
+    rescue => e
+      Rails.logger.error("[SIAC][UPDATE] ERROR: #{e.class}: #{e.message}")
+      flash.now[:error] = "No se pudo actualizar la convocatoria."
+      render :edit
+    end
+  end
+
+
+
 
  def bookmark
   # Encuentra la convocatoria por ID
@@ -289,7 +782,22 @@ end
  end
 
   def pdf_preview
-    @convocatoria = Convocatoria.new(convocatoria_params)
+    # 1) Tomar params de manera tolerante (con o sin scope convocatoria)
+    raw = params[:convocatoria].presence || params
+
+    # 2) Construir un objeto liviano con los campos que usa el PDF
+    @convocatoria = OpenStruct.new(
+      resolucion:      raw[:resolucion].to_s,
+      nombre:          raw[:nombre].to_s,
+      titulaciones:    raw[:titulaciones].to_s,
+      fecha_inicio:    parse_date_param(raw[:fecha_inicio]),
+      fecha_hasta:     parse_date_param(raw[:fecha_hasta]),
+
+      # si después querés usar estos en el PDF:
+      especialidad_ids: Array(raw[:especialidad_ids]).reject(&:blank?).map(&:to_i),
+      sedes_codigos:    Array(raw[:sedes_codigos]).reject(&:blank?).map(&:to_i),
+      componentes_codigos: Array(raw[:componentes_codigos]).reject(&:blank?).map(&:to_i)
+    )
 
     pdf = Prawn::Document.new(
       page_size: "A4",
@@ -318,10 +826,11 @@ end
     explicacion_uso(pdf)
 
     send_data pdf.render,
-              filename: "Convocatoria_#{@convocatoria.nombre}.pdf",
+              filename: "Convocatoria_#{(@convocatoria.nombre.presence || 'preview')}.pdf",
               type: "application/pdf",
               disposition: "attachment"
   end
+
 
   def header(pdf)
     candidates = [
@@ -789,14 +1298,80 @@ end
     pdf.move_down 10
   end
 
+  def siac_estado_id(nombre_estado)
+    row = Siac::SiacRepository.query(
+      Siac::SiacRepository.send(
+        :sanitize_sql_array,
+        [%Q{
+          SELECT id_estado
+          FROM public."SIAC_EstadosConvocatorias"
+          WHERE nombre_estado = ?
+          LIMIT 1
+        }, nombre_estado]
+      )
+    ).first
+
+    row && row["id_estado"]
+  end
 
 
  private
 
+ def preparar_form_nueva_convocatoria
+    @convocatoria ||= OpenStruct.new
+
+    @titulaciones = [
+      ['Carrera de Grado', 3],
+      ['Ciclo de Licenciatura', 11],
+      ['Tecnico Superior', 12],
+      ['Maestría', 5],
+      ['Doctorado', 6]
+    ]
+
+    @especialidades ||= []
+
+    @componentes = Siac::SiacRepository.query(%Q{
+      SELECT id_componente, nombre, id_dimension
+      FROM public."SIAC_Componentes"
+      WHERE activo = B'1'
+      ORDER BY id_dimension, id_componente
+    }).map do |r|
+      ComponenteDto.new(
+        id: r["id_componente"],
+        nombre: r["nombre"],
+        dimension_id: r["id_dimension"]
+      )
+    end
+
+    @sedes ||= []
+  end
+
+  def parse_date_param(v)
+    return nil if v.blank?
+    Date.parse(v.to_s)
+  rescue ArgumentError
+    nil
+  end
+
+ def parse_date(value)
+    return value if value.is_a?(Date)
+    return value.to_date if value.respond_to?(:to_date) # Time/DateTime/ActiveSupport
+    return nil if value.blank?
+
+    Date.parse(value.to_s)
+  rescue ArgumentError
+    nil
+  end
+  private :parse_date
+
  def convocatoria_params
-  params.require(:convocatoria).permit(
-   :resolucion, :nombre, :fecha_inicio, :fecha_hasta, :titulaciones, :etapa, :estado,
-   sedes_codigos: [], componentes_codigos: [], especialidad_ids: [] # <-- permit IDs
-  )
+    params.require(:convocatoria).permit(
+        :resolucion, :nombre, :titulaciones,
+        :fecha_inicio, :fecha_hasta,
+        :fecha_fin_capacitacion, :fecha_fin_carga, :fecha_fin_revision,
+        :fecha_fin_correcciones, :fecha_fin_auditoria,
+        sedes_codigos: [], componentes_codigos: [], especialidad_ids: []
+      )
+
  end
 end

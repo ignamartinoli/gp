@@ -1,3 +1,9 @@
+<% if flash[:error] %>
+  <div class="flash error">
+    <%= flash[:error] %>
+  </div>
+<% end %>
+
 <%= form_for @componente, url: create_componente_path, html: { onsubmit: 'return validarNuevoComponente(event)' }, id: 'formComponente' do |f| %>
 
   <div class="div_section">
@@ -65,7 +71,10 @@
           </span>
         </div>
         <div class="lf4c3">
-          <%= f.select :dimension_id, options_from_collection_for_select(@dimensiones, :id, :dimension), include_blank: 'Selecciona una opción', id: 'componenteDimensionId' %>
+          <%= f.select :dimension_id,
+            options_from_collection_for_select(@dimensiones, :id, :dimension, f.object.dimension_id),
+            { include_blank: "Selecciona una opción" },
+            { id: "componenteDimensionId" } %>
         </div>
         <div class="lf4c4 errorDimension">
         </div>
@@ -159,8 +168,11 @@
                 </span>
               </div>          
               <div class="lf4c3">
-                <%= campo_form.select :tipo_campo_id, options_for_select([["Selecciona una opción", ""]] + @tipos_campo.map { |t| [t.nombre, t.id] }), { id: "selectTipoCampo_#{index}" }, 
-        { class: "tipo-campo" } %>
+                <%= campo_form.select :tipo_campo_id,
+                  options_for_select([["Selecciona una opción", ""]] + @tipos_campo.map { |t| [t.nombre, t.id] }),
+                  {},
+                  { id: "selectTipoCampo_#{index}", class: "tipo-campo" } %>
+
               </div>          
               <div class="lf4c4 errorTipoCampo">
               </div>          
@@ -290,8 +302,10 @@
                 </span>
               </div>          
               <div class="lf4c3">
-                <%= campo_form.select :tipo_campo_id, options_for_select([["Selecciona una opción", ""]] + @tipos_campo.map { |t| [t.nombre, t.id] }), { id: "selectTipoCampo_#{index}" }, 
-        { class: "tipo-campo" } %>
+                <%= campo_form.select :tipo_campo_id,
+                  options_for_select([["Selecciona una opción", ""]] + @tipos_campo.map { |t| [t.nombre, t.id] }),
+                  {},
+                  { id: "selectTipoCampo_#{index}", class: "tipo-campo" } %>
               </div>          
               <div class="lf4c4 errorTipoCampo">
               </div>          
