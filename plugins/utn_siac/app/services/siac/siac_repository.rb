@@ -13,7 +13,6 @@ module Siac
     end
 
     def self.function_typed(nombre, typed_params)
-      # typed_params = [{ value: ..., cast: "boolean" }, ...]
       placeholders = typed_params.map { |p| "?::#{p[:cast]}" }.join(", ")
       sql = "SELECT * FROM #{nombre}(#{placeholders})"
       values = typed_params.map { |p| p[:value] }
@@ -22,8 +21,6 @@ module Siac
         sanitize_sql_array([sql, *values])
       ).to_a
     end
-
-
 
     def self.procedure(nombre, *params)
       placeholders = (["?"] * params.length).join(", ")
@@ -37,23 +34,7 @@ module Siac
       rows.length == 1 ? rows.first : rows
     end
 
-
-    def self.pg_int_array_literal(arr)
-      a = Array(arr).compact.reject(&:blank?).map(&:to_i)
-      "{#{a.join(',')}}"
-    end
-
-    def self.pg_varchar_array_literal(arr)
-      a = Array(arr).compact.reject(&:blank?).map(&:to_s)
-      return nil if a.empty?
-      # En literal PG, strings van con comillas dobles si hay caracteres especiales;
-      # como mínimo escapamos comillas dobles.
-      escaped = a.map { |s| s.gsub('"', '\"') }
-      "{#{escaped.join(',')}}"
-    end
-
     def self.procedure_typed(nombre, typed_params)
-      # typed_params = [{ value: ..., cast: "integer[]" }, ...]
       placeholders = typed_params.map { |p| "?::#{p[:cast]}" }.join(", ")
       sql = "CALL #{nombre}(#{placeholders})"
       values = typed_params.map { |p| p[:value] }
@@ -64,9 +45,30 @@ module Siac
       result.to_a
     end
 
-
     def self.query(sql)
       connection.exec_query(sql).to_a
+    end
+
+    # Devuelve el primer valor de la primera fila o nil.
+    # Útil para SELECT id ... LIMIT 1
+    def self.select_value(sql, *binds)
+      rows = connection.exec_query(
+        sanitize_sql_array([sql, *binds])
+      ).to_a
+      return nil if rows.empty?
+      rows.first.values.first
+    end
+
+    def self.pg_int_array_literal(arr)
+      a = Array(arr).compact.reject(&:blank?).map(&:to_i)
+      "{#{a.join(',')}}"
+    end
+
+    def self.pg_varchar_array_literal(arr)
+      a = Array(arr).compact.reject(&:blank?).map(&:to_s)
+      return nil if a.empty?
+      escaped = a.map { |s| s.gsub('"', '\"') }
+      "{#{escaped.join(',')}}"
     end
   end
 end

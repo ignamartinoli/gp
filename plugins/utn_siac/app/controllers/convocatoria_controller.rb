@@ -167,36 +167,23 @@ class ConvocatoriaController < ApplicationController
 
 
   def create
-    # 1) params tolerantes: si viene scope :convocatoria OK, si no, fallback
     raw = params[:convocatoria].presence || params
 
-    # 2) Campos base
     numero_res = raw[:resolucion].to_s.strip
     nombre     = raw[:nombre].to_s.strip
     tipo_esp   = raw[:titulaciones].to_i
 
-    # Fechas
     f_ini = parse_date_param(raw[:fecha_inicio])
     f_fin = parse_date_param(raw[:fecha_hasta])
 
-    # 3) Arrays: soporta ambas formas de nombres (convocatoria[...][] o sueltos)
-    especialidades =
-      Array(raw[:especialidad_ids]).presence ||
-      Array(params[:especialidad_ids])
-
-    componentes =
-      Array(raw[:componentes_codigos]).presence ||
-      Array(params[:componentes_codigos])
-
-    sedes =
-      Array(raw[:sedes_codigos]).presence ||
-      Array(params[:sedes_codigos])
+    especialidades = Array(raw[:especialidad_ids]).presence || Array(params[:especialidad_ids])
+    componentes    = Array(raw[:componentes_codigos]).presence || Array(params[:componentes_codigos])
+    sedes          = Array(raw[:sedes_codigos]).presence || Array(params[:sedes_codigos])
 
     especialidades = Array(especialidades).reject(&:blank?).map(&:to_i).uniq
     componentes    = Array(componentes).reject(&:blank?).map(&:to_i).uniq
     regionales     = Array(sedes).reject(&:blank?).map(&:to_i).uniq
 
-    # 4) Validaciones mínimas (ajustá si querés)
     errores = []
     errores << "La resolución es obligatoria." if numero_res.blank?
     errores << "El nombre es obligatorio." if nombre.blank?
@@ -213,57 +200,44 @@ class ConvocatoriaController < ApplicationController
       return render :new
     end
 
-
-    # 5) Fechas intermedias: tu UI las valida, pero la SP las requiere.
-    # Usamos los valores de UI si están, sino colapsamos a f_fin.
-    # (si no tenés estos campos en el form, raw[...] será nil)
     f_fin_capacitacion = parse_date_param(raw[:fecha_fin_capacitacion]) || f_fin
     f_fin_carga        = parse_date_param(raw[:fecha_fin_carga])        || f_fin
     f_fin_revision     = parse_date_param(raw[:fecha_fin_revision])     || f_fin
     f_fin_correcciones = parse_date_param(raw[:fecha_fin_correcciones]) || f_fin
     f_fin_auditoria    = parse_date_param(raw[:fecha_fin_auditoria])    || f_fin
 
-    # 6) Sedes: hoy mandás sólo regionales. Extensiones queda nil.
     extensiones = nil
-
-    # 7) Usuario
     user_id = User.current.id
 
-    Rails.logger.info("[SIAC][CREATE] res=#{numero_res.inspect} nombre=#{nombre.inspect} tipo=#{tipo_esp} user=#{user_id} " \
-                      "ini=#{f_ini} fin=#{f_fin} esp=#{especialidades.size} comp=#{componentes.size} sedes=#{regionales.size}")
-
-    # 8) Llamada a SP
-    resultado = nil
-        begin
-    resultado = nil
-
-    typed = [
-      { value: resultado, cast: "integer" },                         # INOUT p_resultado
-      { value: numero_res, cast: "character varying" },
-      { value: nombre,     cast: "character varying" },
-      { value: tipo_esp,   cast: "integer" },
-      { value: user_id,    cast: "integer" },
-      { value: f_ini,      cast: "date" },
-      { value: f_fin_capacitacion, cast: "date" },
-      { value: f_fin_carga,        cast: "date" },
-      { value: f_fin_revision,     cast: "date" },
-      { value: f_fin_correcciones, cast: "date" },
-      { value: f_fin_auditoria,    cast: "date" },
-      { value: f_fin,              cast: "date" },
-
-      # Arrays -> literal + cast
-      { value: Siac::SiacRepository.pg_int_array_literal(especialidades), cast: "integer[]" },
-      { value: Siac::SiacRepository.pg_int_array_literal(componentes),    cast: "integer[]" },
-      { value: Siac::SiacRepository.pg_int_array_literal(regionales),     cast: "integer[]" },
-
-      # extensiones: varchar[] o NULL
-      { value: Siac::SiacRepository.pg_varchar_array_literal(extensiones), cast: "character varying[]" }
-    ]
-
-    resultado = Siac::SiacRepository.procedure_typed(
-      "public.siac_insertar_convocatorias",
-      typed
+    Rails.logger.info(
+      "[SIAC][CREATE] res=#{numero_res.inspect} nombre=#{nombre.inspect} tipo=#{tipo_esp} user=#{user_id} " \
+      "ini=#{f_ini} fin=#{f_fin} esp=#{especialidades.size} comp=#{componentes.size} sedes=#{regionales.size}"
     )
+
+    # 1) CALL procedure (p_resultado = status)
+    begin
+      resultado = nil
+
+      typed = [
+        { value: resultado, cast: "integer" }, # INOUT p_resultado (STATUS)
+        { value: numero_res, cast: "character varying" },
+        { value: nombre,     cast: "character varying" },
+        { value: tipo_esp,   cast: "integer" },
+        { value: user_id,    cast: "integer" },
+        { value: f_ini,      cast: "date" },
+        { value: f_fin_capacitacion, cast: "date" },
+        { value: f_fin_carga,        cast: "date" },
+        { value: f_fin_revision,     cast: "date" },
+        { value: f_fin_correcciones, cast: "date" },
+        { value: f_fin_auditoria,    cast: "date" },
+        { value: f_fin,              cast: "date" },
+        { value: Siac::SiacRepository.pg_int_array_literal(especialidades), cast: "integer[]" },
+        { value: Siac::SiacRepository.pg_int_array_literal(componentes),    cast: "integer[]" },
+        { value: Siac::SiacRepository.pg_int_array_literal(regionales),     cast: "integer[]" },
+        { value: Siac::SiacRepository.pg_varchar_array_literal(extensiones), cast: "character varying[]" }
+      ]
+
+      resultado = Siac::SiacRepository.procedure_typed("public.siac_insertar_convocatorias", typed)
     rescue => e
       Rails.logger.error("[SIAC][CREATE] ERROR procedure: #{e.class}: #{e.message}")
       Rails.logger.error(e.backtrace.join("\n"))
@@ -272,32 +246,64 @@ class ConvocatoriaController < ApplicationController
       return render :new
     end
 
-    # 9) Normalizar retorno (Array/Hash/scalar)
-    row =
-      if resultado.is_a?(Array)
-        resultado.first
-      else
-        resultado
-      end
+    row = resultado.is_a?(Array) ? resultado.first : resultado
 
-    new_id =
+    status =
       if row.is_a?(Hash)
-        row["p_resultado"] || row[:p_resultado] || row["resultado"] || row[:resultado]
+        (row["p_resultado"] || row[:p_resultado]).to_i
       else
-        row
+        row.to_i
       end
 
-    new_id_i = new_id.to_i
+    Rails.logger.info("[SIAC][CREATE] procedure raw=#{resultado.inspect} status=#{status}")
 
-    Rails.logger.info("[SIAC][CREATE] procedure resultado=#{resultado.inspect} new_id=#{new_id.inspect} new_id_i=#{new_id_i}")
-
-    if new_id_i > 0
-      redirect_to convocatorias_path, notice: "Convocatoria creada con éxito."
-    else
+    unless status == 1
       flash.now[:error] = "No se pudo crear la convocatoria."
       preparar_form_nueva_convocatoria
-      render :new
+      return render :new
     end
+
+    # 2) Recuperar ID REAL en Postgres (SIAC_Convocatorias)
+    #    Endurecido con user_id para evitar colisiones si se repite numero_resolucion.
+    begin
+      new_id_i = Siac::SiacRepository.select_value(
+        <<~SQL,
+          SELECT id_convocatoria
+          FROM public."SIAC_Convocatorias"
+          WHERE numero_resolucion = ?
+            AND id_usuario_creacion = ?
+          ORDER BY id_convocatoria DESC
+          LIMIT 1
+        SQL
+        numero_res, user_id
+      ).to_i
+    rescue => e
+      Rails.logger.error("[SIAC][CREATE] ERROR obteniendo id_convocatoria: #{e.class}: #{e.message}")
+      Rails.logger.error(e.backtrace.join("\n"))
+      flash.now[:error] = "Convocatoria creada, pero no pude recuperar su ID."
+      preparar_form_nueva_convocatoria
+      return render :new
+    end
+
+    if new_id_i <= 0
+      Rails.logger.error("[SIAC][CREATE] SP OK pero id_convocatoria no encontrado res=#{numero_res.inspect} user=#{user_id}")
+      flash.now[:error] = "Convocatoria creada, pero no pude recuperar su ID."
+      preparar_form_nueva_convocatoria
+      return render :new
+    end
+
+    Rails.logger.info("[SIAC][CREATE] id_convocatoria recuperado=#{new_id_i}")
+
+    # 3) Post-proceso (service refactor)
+    begin
+      Siac::CrearClientesPorConvocatoria.new(convocatoria_id: new_id_i, sedes_ids: regionales).call
+    rescue => e
+      Rails.logger.error("[SIAC][CREATE] ERROR CrearClientesPorConvocatoria: #{e.class}: #{e.message}")
+      Rails.logger.error(e.backtrace.join("\n"))
+      flash[:warning] = "Convocatoria creada, pero hubo un problema creando clientes asociados."
+    end
+
+    redirect_to convocatorias_path, notice: "Convocatoria creada con éxito."
   end
 
 
