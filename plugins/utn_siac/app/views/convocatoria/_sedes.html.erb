@@ -7,12 +7,18 @@
     <tr>
       <td>
         <div class="checkboxConvContainer">
-          <input type="checkbox" class="checkbox rowCheckboxSede" name="sedes_codigos[]" value="<%= s[:id_facultad] %>">
+          <input
+            type="checkbox"
+            class="checkbox rowCheckboxSede"
+            name="sedes_codigos[]"
+            value="<%= s[:extension_id].presence || s[:regional_id] %>"
+          >
           Seleccionar
         </div>
       </td>
-      <td><%= h(s[:nombre]) %></td>
-      <td><%= h(s[:extensiones]) %></td>
+
+      <td><%= h(s[:regional]) %></td>
+      <td><%= h(s[:extension].presence || "-") %></td>
     </tr>
   <% end %>
 <% end %>

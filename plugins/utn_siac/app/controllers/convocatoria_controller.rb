@@ -60,7 +60,7 @@ class ConvocatoriaController < ApplicationController
     especialidad_ids = Array(params[:especialidades]).reject(&:blank?).map(&:to_i).uniq
     return render partial: "sedes", locals: { sedes: [] } if especialidad_ids.empty?
 
-    sedes_by_id = {}
+    rows_out = []
 
     especialidad_ids.each do |especialidad_id|
       rows = Siac::SiacRepository.query(
@@ -71,18 +71,51 @@ class ConvocatoriaController < ApplicationController
       )
 
       rows.each do |r|
-        id_facultad = r["id_facultad"]
-        sedes_by_id[id_facultad] ||= {
-          id_facultad: id_facultad,
-          nombre: r["nombre"],
-          extensiones: r["extensiones"]
-        }
+        regional_id   = r["id_facultad"]
+        regional_name = r["nombre"].to_s
+
+        # OJO: "extensiones" puede venir como array, json, string, etc.
+        # Acá lo tratamos defensivamente.
+        ext_list = r["extensiones"]
+
+        # Si NO hay extensiones -> generamos una fila "sin extensión"
+        if ext_list.blank?
+          rows_out << { regional_id: regional_id, regional: regional_name, extension_id: nil, extension: nil }
+          next
+        end
+
+        # Si hay extensiones, intentamos iterarlas como colección.
+        # Ajustá este bloque según la forma real de "extensiones" (ver notas abajo).
+        Array(ext_list).each do |ext|
+          # ext puede ser Hash, OpenStruct, etc.
+          ext_id   = ext.is_a?(Hash) ? (ext["id_extension"] || ext[:id_extension]) : (ext.respond_to?(:id_extension) ? ext.id_extension : nil)
+          ext_name = ext.is_a?(Hash) ? (ext["nombre"] || ext[:nombre]) : (ext.respond_to?(:nombre) ? ext.nombre : ext.to_s)
+
+          rows_out << { regional_id: regional_id, regional: regional_name, extension_id: ext_id, extension: ext_name.to_s.presence }
+        end
       end
     end
 
-    render partial: "sedes", locals: { sedes: sedes_by_id.values }
-  end
+    # Deduplicar (por si viene repetido desde varias especialidades)
+    rows_out.uniq! { |x| [x[:regional_id].to_i, x[:extension_id].to_i, x[:extension].to_s] }
 
+    # Normalizador para ordenar (acentos/upper/lower)
+    norm = ->(s) { I18n.transliterate(s.to_s).downcase.strip }
+
+    # ORDEN:
+    # 1) regional asc
+    # 2) sin extensión primero (0), con extensión después (1)
+    # 3) nombre de extensión asc
+    rows_out.sort_by! do |x|
+      [
+        norm.call(x[:regional]),
+        x[:extension].present? ? 1 : 0,
+        norm.call(x[:extension])
+      ]
+    end
+
+    render partial: "sedes", locals: { sedes: rows_out }
+  end
 
   def cerrar_vencidas_siac(today)
     cerrada_id = Siac::SiacRepository.query(%Q{
