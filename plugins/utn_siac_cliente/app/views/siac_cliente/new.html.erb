@@ -1,8 +1,9 @@
 <%# app/views/convocatoria/preview.html.erb %>
 
 <%
-  componentes_de_convocatoria = @convocatoria.componentes.includes(:campos, :dimension)
-  componentes_por_dimension = componentes_de_convocatoria.group_by(&:dimension_id)
+  # ANTES: @convocatoria.componentes.includes(:campos, :dimension)
+  # AHORA: lo trae el controller en @componentes_por_dimension
+  componentes_por_dimension = @componentes_por_dimension || {}
 %>
 
 <div class="convocatoria-layout">
@@ -491,74 +492,195 @@
               if (initial) activateComponentTab(root, initial);
           }
 
-          function bindDimensionUI(dimEl) {
-              if (!dimEl) return;
-              bindModeTabs(dimEl);
-              bindComponentTabs(dimEl);
-          }
+      function bindDimensionUI(dimEl) {
+        bindModeTabs(dimEl);
+        bindComponentTabs(dimEl);
 
-          function showOnlySectionById(idWithoutHash) {
-              if (!idWithoutHash) return;
+        restoreActiveComponent(dimEl);
 
-              sections.forEach(function (s) {
-                  s.classList.toggle("is-visible", s.id === idWithoutHash);
-              });
+        var visibleComp = dimEl.querySelector(".componente-section.is-visible");
+        if (visibleComp) applyModeToComponent(visibleComp, getCurrentMode(dimEl));
+      }
 
-              var visibleDim = document.getElementById(idWithoutHash);
-              if (visibleDim) bindDimensionUI(visibleDim);
+      function patchPaginationLinks() {
+        var hash = window.location.hash;
+        if (!hash) return;
 
-              var newHash = "#" + idWithoutHash;
-              if (history && history.replaceState) history.replaceState(null, "", newHash);
-              else window.location.hash = newHash;
+        document.querySelectorAll(".pagination a[href]").forEach(function (a) {
+          a.href = a.href.split("#")[0] + hash; // reemplaza siempre por el hash actual
+        });
+      }
 
-              patchPaginationLinks();
-          }
+      function storageKeyForComponent(dimId) {
+        return "active_component_for_" + dimId;
+      }
 
-          // --- Click en sidebar (dimensiones) ---
-          links.forEach(function (link) {
-              link.addEventListener("click", function (e) {
-                  e.preventDefault();
-                  var targetId = link.getAttribute("data-target") || (link.getAttribute("href") || "").replace("#", "");
-                  if (!targetId) return;
-                  setActiveLink(link);
-                  showOnlySectionById(targetId);
-              });
-          });
+      function getDimIdFromElement(dimEl) {
+        // dimEl.id = "dimension-2"
+        return (dimEl && dimEl.id) ? dimEl.id.replace("dimension-", "") : null;
+      }
 
-          // --- On load ---
-          if (window.location.hash) {
-              var id = window.location.hash.replace("#", "");
-              var active = document.querySelector('[data-dimension-link="true"][data-target="' + id + '"]');
-              if (active) setActiveLink(active);
-              showOnlySectionById(id);
-          } else {
-              var first = document.querySelector(".dimension-section.is-visible") || sections[0];
-              if (first) {
-                  var firstLink = document.querySelector('[data-dimension-link="true"][data-target="' + first.id + '"]');
-                  if (firstLink) setActiveLink(firstLink);
-                  showOnlySectionById(first.id);
-              }
-          }
+      function restoreActiveComponent(dimEl) {
+        if (!dimEl) return;
 
-          patchPaginationLinks();
+        var dimId = getDimIdFromElement(dimEl);
+        if (!dimId) return;
+
+        var savedTarget = sessionStorage.getItem(storageKeyForComponent(dimId));
+        if (!savedTarget) return;
+
+        // Buscar el tab cuyo data-target coincide con lo guardado
+        var tab = dimEl.querySelector('[data-componente-tab="true"][data-target="' + savedTarget + '"]');
+        if (tab) {
+          tab.click(); // reutiliza tu lógica activateTab y deja todo consistente
+        }
+      }
+
+      function showOnlySectionById(idWithoutHash) {
+        if (!idWithoutHash) return;
+
+        sections.forEach(function (s) {
+          s.classList.toggle("is-visible", s.id === idWithoutHash);
+        });
+
+        var visibleDim = document.getElementById(idWithoutHash);
+        if (visibleDim) bindDimensionUI(visibleDim);
+
+        if (history && history.replaceState) {
+          history.replaceState(null, "", newHash);
+        } else {
+          window.location.hash = newHash;
+        }
+
+        patchPaginationLinks();
+      }
+
+      // Click behavior (dimensions)
+      links.forEach(function (link) {
+        link.addEventListener("click", function (e) {
+          e.preventDefault();
+          var targetId = link.getAttribute("data-target") || (link.getAttribute("href") || "").replace("#", "");
+          if (!targetId) return;
+
+          setActiveLink(link);
+          showOnlySectionById(targetId);
+        });
       });
+
+      // On load
+      if (window.location.hash) {
+        var id = window.location.hash.replace("#", "");
+        var active = document.querySelector('[data-dimension-link="true"][data-target="' + id + '"]');
+        if (active) setActiveLink(active);
+        showOnlySectionById(id);
+      } else {
+        var first = document.querySelector(".dimension-section.is-visible") || sections[0];
+        if (first) {
+          var firstLink = document.querySelector('[data-dimension-link="true"][data-target="' + first.id + '"]');
+          if (firstLink) setActiveLink(firstLink);
+          showOnlySectionById(first.id);
+        }
+      }
+
+      patchPaginationLinks();
+    });
   </script>
 
-  <!-- ✅ Tu JS “extra” separado para que si algo falla NO rompa el sidebar -->
   <script>
-      // Modal docente
-      window.openDocenteDialog = function (id) {
-          if (!window.$ || !$('#' + id).length) return;
-          $('#' + id).dialog({
-              modal: true,
-              width: '70%',
-              draggable: true,
-              resizable: false,
-              closeText: 'Cerrar'
-          });
-      };
+    function openDocenteDialog(id) {
+      $('#' + id).dialog({
+        modal: true,
+        width: '70%',
+        draggable: true,
+        resizable: false,
+        closeText: 'Cerrar'
+      });
+    }
 
-      // (Dejá acá todo tu JS adicional: fetch, validaciones, stepper, etc.)
-      // Te recomiendo NO mezclarlo con el script del sidebar.
+    document.addEventListener('click', function (e) {
+      if (!e.target.matches('.siac_button_secondary')) return;
+
+      const cuitInput = document.querySelector('input[name="empresa[cuit]"]');
+      const label = document.getElementById('empresa_nombre');
+
+      if (!cuitInput || !label) return;
+
+      const cuit = cuitInput.value.trim();
+
+      if (!/^\d{11}$/.test(cuit)) {
+        label.textContent = 'CUIT inválido';
+        return;
+      }
+
+      label.textContent = 'Buscando empresa…';
+
+      fetch('/siac_cliente/buscar_empresa_nosis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ cuit: cuit })
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.razon_social) {
+            label.textContent = data.razon_social;
+          } else {
+            label.textContent = 'Empresa no encontrada';
+          }
+        })
+        .catch(() => {
+          label.textContent = 'Error al consultar empresa';
+        });
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!e.target.matches('button.btn.btn-primary')) return;
+
+      const cuitInput = document.querySelector('input[name="docente[cuit]"]');
+      const msg = document.getElementById('docente-no-encontrado');
+
+      if (!cuitInput || !msg) return;
+
+      const cuit = cuitInput.value.trim();
+
+      if (!/^\d{11}$/.test(cuit)) {
+        msg.textContent = 'CUIT inválido. Debe tener 11 números.';
+        msg.classList.remove('alert-success');
+        msg.classList.add('alert-danger');
+        msg.style.display = 'flex';
+        return;
+      }
+
+      fetch('/siac_docentes/buscar_por_cuit?cuit=' + cuit, {
+        headers: { 'Accept': 'application/json' }
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (!data.found) {
+            msg.textContent = 'Docente no encontrado';
+            msg.classList.remove('alert-success');
+            msg.classList.add('alert-danger');
+            msg.style.display = 'flex';
+            return;
+          }
+
+          msg.textContent = 'Docente encontrado';
+          msg.classList.remove('alert-danger');
+          msg.classList.add('alert-success');
+          msg.style.display = 'flex';
+
+          document.querySelector('input[name="docente[nombre]"]').value   = data.nombre;
+          document.querySelector('input[name="docente[apellido]"]').value = data.apellido;
+        });
+    });
+
+    document.addEventListener('input', function (e) {
+      if (e.target.name === 'docente[cuit]') {
+        const msg = document.getElementById('docente-no-encontrado');
+        if (msg) msg.style.display = 'none';
+      }
+    });
   </script>
 <% end %>
