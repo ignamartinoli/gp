@@ -260,6 +260,9 @@ module ComponenteHelper
     permitido = (permite == true) || (permite.to_s == "1")
     return unless permitido
 
+    tipo = campo.try(:tipo_campo).try(:nombre).to_s.downcase
+    return unless (tipo =~ /texto/)
+
     content_tag(:div, class: 'campo-adjunto mt-2') do
       label_tag("adjunto_#{campo.id}", "Adjuntar archivo:", class: 'form-label') +
         file_field_tag("adjunto_#{campo.id}", class: 'campo-adjunto form-control-file')
