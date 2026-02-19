@@ -40,7 +40,11 @@ Redmine::Plugin.register :utn_siac do
   menu :application_menu, :utn_siac,
      { controller: 'convocatoria', action: 'index' },
      caption: 'SIAC', before: :gantt,
-     if: Proc.new { User.current.logged? && !User.current.siac_cliente? }
+     if: Proc.new {
+        u = User.current
+        u.logged? && !SiacCliente.exists?(user_id: u.id, activo: true)
+      }
+
 
   Rails.application.config.assets.precompile += %w(especialidades.js)
 end
