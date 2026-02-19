@@ -1,5 +1,5 @@
 class Bookmark < ActiveRecord::Base
-  belongs_to :convocatoria
+  # belongs_to :convocatoria
   # No necesitamos belongs_to :user ya que no estamos creando un modelo User
 
   validates :user_id, presence: true # Aseguramos que user_id esté presente
