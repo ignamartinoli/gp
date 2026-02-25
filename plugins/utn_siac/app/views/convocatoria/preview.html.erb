@@ -51,6 +51,25 @@
 
   <!-- COLUMNA DERECHA: DETALLE DE CONVOCATORIA + DIMENSIONES -->
   <div class="convocatoria-column">
+    <!-- COMPLETION BAR -->
+    <div class="completion-bar-container">
+      <div class="completion-bar-wrapper">
+        <span class="completion-label">Progreso del formulario:</span>
+        <div class="completion-bar-track">
+          <div class="completion-bar-fill" id="completion-bar-fill" style="width: 0%"></div>
+          <div class="completion-percentage" id="completion-percentage">0%</div>
+        </div>
+        <div class="completion-stats">
+          <div class="completion-stat">
+            <span class="completion-stat-value" id="completion-filled">0</span>
+            <span>/</span>
+            <span id="completion-total">0</span>
+            <span>campos</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="div_section">
       <h3 class="siac_title">Administración de convocatorias</h3>
       <h2>Dimensiones asociadas</h2>
@@ -672,6 +691,104 @@
         slider.style.background =
           `linear-gradient(to right, ${color} ${value}%, #d6d6d6 ${value}%)`;
       });
+
+      // ===============================
+      // COMPLETION TRACKER
+      // ===============================
+      function updateCompletionBar() {
+        // Get all visible form fields in the current dimension
+        const visibleSection = document.querySelector('.dimension-section.is-visible');
+        if (!visibleSection) return;
+
+        const visibleComponent = visibleSection.querySelector('.componente-section.is-visible');
+        if (!visibleComponent) return;
+
+        const visibleGroup = visibleComponent.querySelector('.campos-group.is-visible');
+        if (!visibleGroup) return;
+
+        // Count all fillable fields
+        const textInputs = Array.from(visibleGroup.querySelectorAll('input[type="text"], input[type="number"], input[type="date"], textarea, select'));
+        const checkboxes = Array.from(visibleGroup.querySelectorAll('input[type="checkbox"]'));
+        const radioGroups = {};
+        const radios = Array.from(visibleGroup.querySelectorAll('input[type="radio"]'));
+
+        // Group radios by name
+        radios.forEach(function(radio) {
+          const name = radio.name;
+          if (!radioGroups[name]) radioGroups[name] = [];
+          radioGroups[name].push(radio);
+        });
+
+        const fileInputs = Array.from(visibleGroup.querySelectorAll('input[type="file"]'));
+        const sliders = Array.from(visibleGroup.querySelectorAll('.tipo-campo-barra'));
+
+        let totalFields = textInputs.length + checkboxes.length + Object.keys(radioGroups).length + fileInputs.length + sliders.length;
+        let filledFields = 0;
+
+        // Check text inputs, textareas, selects
+        textInputs.forEach(function(input) {
+          if (input.value && input.value.trim() !== '') {
+            filledFields++;
+          }
+        });
+
+        // Check checkboxes
+        checkboxes.forEach(function(checkbox) {
+          if (checkbox.checked) {
+            filledFields++;
+          }
+        });
+
+        // Check radio groups (at least one selected in each group)
+        Object.keys(radioGroups).forEach(function(groupName) {
+          const group = radioGroups[groupName];
+          const hasSelected = group.some(function(radio) { return radio.checked; });
+          if (hasSelected) filledFields++;
+        });
+
+        // Check file inputs
+        fileInputs.forEach(function(input) {
+          if (input.files && input.files.length > 0) {
+            filledFields++;
+          }
+        });
+
+        // Check sliders (consider filled if value > 0)
+        sliders.forEach(function(slider) {
+          if (slider.value && parseInt(slider.value) > 0) {
+            filledFields++;
+          }
+        });
+
+        // Calculate percentage
+        const percentage = totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
+
+        // Update UI
+        const fillBar = document.getElementById('completion-bar-fill');
+        const percentageText = document.getElementById('completion-percentage');
+        const filledText = document.getElementById('completion-filled');
+        const totalText = document.getElementById('completion-total');
+
+        if (fillBar) fillBar.style.width = percentage + '%';
+        if (percentageText) percentageText.textContent = percentage + '%';
+        if (filledText) filledText.textContent = filledFields;
+        if (totalText) totalText.textContent = totalFields;
+      }
+
+      // Update on any input change
+      document.addEventListener('input', updateCompletionBar);
+      document.addEventListener('change', updateCompletionBar);
+
+      // Update when tabs change
+      const observer = new MutationObserver(updateCompletionBar);
+      observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class'],
+        subtree: true
+      });
+
+      // Initial update after short delay (to ensure DOM is ready)
+      setTimeout(updateCompletionBar, 300);
 
     });
   </script>
