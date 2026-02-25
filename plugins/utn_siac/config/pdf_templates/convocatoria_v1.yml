@@ -1,0 +1,239 @@
+sections:
+  - type: right_paragraph
+    text: "Buenos Aires, {{fecha_hoy}}. -"
+    after: 15
+
+  - type: paragraph
+    text: "El presente documento tiene el fin de resumir y guiar en la Convocatoria de Certificación SIAC-UTN bajo la denominación {{nombre}}, iniciada para la fecha de {{fecha_inicio}}, para dar cumplimiento a la implementación del Sistema Institucional de Aseguramiento de la Calidad establecido por la Resolución Ministerial N° 2597/2023. Dando realización a lo definido en la resolución {{resolucion}} del Consejo Superior de la UNIVERSIDAD TECNOLÓGICA NACIONAL."
+    after: 12
+
+  - type: heading
+    text: "Objetivo de la convocatoria"
+    after: 6
+
+  - type: paragraph
+    text: "El objetivo central es certificar la calidad académica de las carreras de Pregrado (Tecnicaturas), Grado (Licenciaturas y Ciclos de Complementación) e Ingenierías no comprendidas en el Art. 43 de la Ley de Educación Superior. Este proceso busca validar el cumplimiento de criterios de calidad y promover la mejora continua, asegurando la transparencia frente a la comunidad universitaria."
+    after: 15
+
+  - type: heading
+    text: "Alcance de esta convocatoria"
+    after: 6
+
+  - type: paragraph
+    text: "Aplica a la carrera seleccionada independientemente de su modalidad de dictado (presencial o a distancia) y su sede o extensión áulica."
+    after: 15
+
+  - type: paragraph
+    text: "Cada regional definirá su respectivo responsable de la carga, el mismo deberá gestionar las siguientes etapas obligatorias a través del sistema de gestión habilitado:"
+    after: 10
+
+  - type: subheading
+    text: "A. Carga de Información y Autoevaluación"
+    after: 4
+
+  - type: paragraph
+    text: "Deberá completar la información requerida en las siguientes Dimensiones de Análisis:"
+    after: 6
+
+  - type: bullets
+    items:
+      - "Dimensión Curricular: Diseño, planes de estudio y su alineación con el perfil profesional."
+      - "Actividad Docente: Calidad del cuerpo docente, selección y capacitación."
+      - "Estudiantado: Acceso, regularidad, promoción y apoyo académico."
+      - "Desarrollo Académico: Análisis de trayectos y tasas de graduación."
+      - "Organizacional: Infraestructura, recursos y mecanismos de gestión."
+    after: 10
+
+  - type: subheading
+    text: "B. Formulación de Acciones de Mejora"
+    after: 4
+
+  - type: paragraph
+    text: "Basado en la autoevaluación, es obligatorio proponer acciones para subsanar debilidades detectadas. Estas deben incluir objetivos claros, responsables, recursos necesarios y cronogramas."
+    after: 10
+
+  - type: subheading
+    text: "C. Validación Externa"
+    after: 4
+
+  - type: paragraph
+    text: "La información cargada será auditada por un Comité de Evaluación Externa e Interna. Tenga en cuenta que se realizarán espacios de intercambio y validación (entrevistas y verificación de instalaciones) para corroborar la veracidad de los datos presentados."
+    after: 15
+
+  - type: page_break
+
+  - type: paragraph
+    text: "La calidad y veracidad de la carga de datos impactan directamente en el futuro operativo de la carrera. El Consejo Superior emitirá una resolución basada en el Informe Final con tres posibles resultados:"
+    after: 10
+
+  - type: table
+    header: true
+    data:
+      - ["Resultado", "Vigencia (Lic. e Ing.)", "Vigencia (Tecnicaturas)", "Implicancia Operativa"]
+      - ["Certificación Plena", "6 Años", "4 Años", "Cumple criterios de calidad sin observaciones estructurales."]
+      - ["Certificación con Compromisos", "3 Años", "2 Años", "Requiere ejecutar planes de mejora obligatorios."]
+      - ["No Certificación", "0 Años", "0 Años", "Se restringe la apertura de nuevas cohortes."]
+    column_align:
+      "0": "center"
+      "1": "center"
+      "2": "center"
+      "3": "left"
+    after: 10
+
+  - type: paragraph
+    text: "IMPORTANTE: Una carga de datos incompleta, errónea o la falta de planes de mejora viables puede derivar en la No Certificación, impidiendo la inscripción de nuevos estudiantes en los ciclos lectivos siguientes."
+    after: 15
+
+  - type: paragraph
+    text: "Dentro del ciclo de vida general de la convocatoria dando inicio el {{fecha_inicio}} hasta el día {{fecha_hasta}}, el sistema gestionará una serie de etapas secuenciales que habilitan o restringen acciones específicas. Es vital que los equipos conozcan en qué fase se encuentran para gestionar sus tiempos."
+    after: 15
+
+  - type: page_break
+
+  - type: heading
+    text: "Etapas del proceso"
+    after: 12
+
+  - type: bullets
+    title: "ETAPA 1: Capacitación y Habilitación de Usuarios hasta el {{fecha_fin_capacitacion}}"
+    items:
+      - "Es la fase inicial de preparación."
+      - "Gestión de Accesos: Se entregarán las credenciales al Responsable de Carga designado."
+      - "Creación de Equipo: El responsable será capacitado para crear y gestionar \"Usuarios de Soporte de Carga\" dentro del sistema."
+      - "Los usuarios de soporte pueden cargar y editar datos, pero NO tienen permiso para realizar el envío final de la presentación."
+      - "Soporte: Se habilitarán canales de discusión exclusivos para resolver dudas funcionales y normativas."
+    after: 12
+
+  - type: bullets
+    title: "ETAPA 2: Carga de Datos (Ventana Activa) hasta el {{fecha_fin_carga}}"
+    items:
+      - "Es el período central donde las Facultades Regionales completan la información, autoevaluación y adjuntos."
+    after: 12
+
+  - type: bullets
+    title: "ETAPA 3: Revisión Interna (Bloqueo Preventivo) hasta el {{fecha_fin_revision}}"
+    items:
+      - "Una vez cerrada la carga, comienza la auditoría por parte del equipo técnico de Planeamiento."
+      - "Estado del Usuario: Solo Lectura. Los usuarios cargadores no podrán subir nueva información ni editar la existente."
+      - "Actividad: Recibirán notificaciones y comentarios de los auditores internos sobre inconsistencias o faltantes detectados."
+    after: 12
+
+  - type: bullets
+    title: "ETAPA 4: Etapa de Correcciones (Interacción) hasta el {{fecha_fin_correcciones}}"
+    items:
+      - "Se habilita una ventana de tiempo específica para subsanar lo detectado en la revisión anterior."
+      - "Dinámica Simultánea: Durante este lapso, conviven la edición por parte de la Regional (para corregir) y la auditoría continua del equipo interno."
+      - "Es el momento de ajustar el contenido antes de la evaluación final."
+    after: 12
+
+  - type: bullets
+    title: "ETAPA 5: Auditoría Externa hasta el {{fecha_fin_auditoria}}"
+    items:
+      - "El proceso pasa a manos del Comité de Pares Evaluadores."
+      - "Estado del Usuario: Bloqueo Total de Edición. Las Facultades Regionales pierden definitivamente el poder de modificación sobre la convocatoria."
+      - "Interacción de Auditores: Los auditores internos dejan sus notas técnicas para los auditores externos."
+      - "Evaluación: Los externos revisan la información, validan las evidencias y generan sus propios comentarios, los cuales quedan registrados para el dictamen."
+    after: 12
+
+  - type: bullets
+    title: "ETAPA 6: Dictamen Final (cierre) hasta el {{fecha_hasta}}"
+    items:
+      - "Etapa conclusiva administrativa."
+      - "Resolución: El Área de Planeamiento consolida las evaluaciones internas y externas. Se procede a la emisión del Informe Final y el dictamen que resultará en una Resolución de Consejo Superior."
+      - "Resultado: Se notifica la Aprobación (Certificación), Observación Estructural (Compromisos) o Rechazo (No Certificación)."
+    after: 10
+
+  - type: page_break
+
+  - type: heading
+    text: "Uso del Sistema de Gestión SIAC-UTN"
+    after: 10
+
+  - type: paragraph
+    text: "Para completar las componentes dentro de las dimensiones de la convocatoria, la plataforma desplegará diferentes tipos de campos según la dimensión que se esté evaluando. A continuación, se detalla el uso correcto de cada uno para asegurar que la información sea procesada exitosamente por el Comité Evaluador."
+    after: 15
+
+  - type: subheading
+    text: "A. Tipos de Campos de Ingreso de Datos"
+    after: 8
+
+  - type: bullets
+    title: "Campo de texto"
+    items:
+      - "Uso: Destinado a descripciones cualitativas, justificaciones de autoevaluación y explicaciones detalladas."
+      - "Recomendación: sea sintético y preciso. Dispone de aproximadamente 300 a 400 palabras."
+      - "Si la información excede este límite, resuma los puntos clave y utilice la opción de “Adjuntar Archivos” para subir el documento extendido."
+    after: 10
+
+  - type: bullets
+    title: "Selección Única"
+    items:
+      - "Uso: Se utiliza para respuestas excluyentes (Ej: “¿La carrera posee coordinador designado? SI/NO”)."
+      - "Advertencia: Solo podrá elegir una opción."
+      - "Verifique bien antes de avanzar, ya que puede definir la lógica de las preguntas siguientes o la obligatoriedad de los campos."
+    after: 10
+
+  - type: bullets
+    title: "Selección Múltiple"
+    items:
+      - "Uso: Permite elegir varias opciones simultáneamente dentro de un listado."
+      - "Ejemplo: “Seleccione los recursos disponibles en el aula: Proyector, PC, Aire Acondicionado…”."
+      - "Recomendación: Marque todas las opciones que correspondan a la realidad de la carrera."
+    after: 10
+
+  - type: bullets
+    title: "Campo Número"
+    items:
+      - "Uso: Exclusivo para datos cuantitativos e indicadores."
+      - "Ejemplos: Cantidad de inscriptos, Tasa de graduación, Metros cuadrados."
+      - "Formato: Ingrese solo valores numéricos, sin texto ni símbolos."
+    after: 10
+
+  - type: bullets
+    title: "Campo Fecha"
+    items:
+      - "Uso: Fundamental para la sección de Planes de Mejora."
+      - "Se utilizará para establecer los hitos de cumplimiento y fechas límite."
+      - "Las fechas ingresadas constituyen compromisos que serán auditados en el futuro."
+    after: 15
+
+  - type: subheading
+    text: "B. Respaldo Documental"
+    after: 8
+
+  - type: paragraph
+    text: "Opción: Adjuntar archivos. Uso: Es el repositorio de EVIDENCIA. Utilícelo para cargar Resoluciones, Planes de Estudio, Convenios firmados o fotografías de instalaciones. Consejo: Todo dato crítico mencionado en un Campo de Texto o Campo Número debería contar con su respaldo documental para facilitar la validación externa."
+    after: 15
+
+  - type: paragraph
+    text: "Una vez completada la carga de datos (componentes), se habilitará la pestaña de Autoevaluación. Esta instancia es el corazón del proceso SIAC-UTN, donde la carrera diagnostica su estado real y define su futuro mediante compromisos de gestión."
+    after: 10
+
+  - type: paragraph
+    text: "El sistema solicitará completar tres bloques de información para cada criterio evaluado:"
+    after: 8
+
+  - type: bullets
+    title: "A. Nivel de Cumplimiento / Calidad (Selector de Porcentaje)"
+    items:
+      - "Alto Cumplimiento: Indica una fortaleza con evidencias sólidas."
+      - "Cumplimiento Parcial o Bajo: Indica una debilidad o Área de Vacancia."
+      - "Para niveles bajos se espera una Acción de Mejora robusta; para niveles altos, un Plan de Continuidad y Crecimiento."
+    after: 10
+
+  - type: bullets
+    title: "B. Descripción / Justificación"
+    items:
+      - "Debe fundamentar la calificación seleccionada."
+      - "No es una repetición de datos: es un análisis cualitativo."
+      - "Explique coherentemente las fortalezas o debilidades detectadas."
+    after: 10
+
+  - type: bullets
+    title: "C. Propuesta de Mejoras (Plan de Acción)"
+    items:
+      - "Objetivo: Qué se va a lograr."
+      - "Responsables: Quién ejecutará la mejora."
+      - "Recursos: Inversión o capital humano requerido."
+      - "Cronograma: Plazos de ejecución."
+    after: 10
