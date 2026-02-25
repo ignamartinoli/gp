@@ -160,3 +160,26 @@ document.addEventListener('DOMContentLoaded', function () {
 	// Si el input ya viene con algo (por ?q=...), filtramos una vez
 	filterConvocatorias();
 });
+
+// --- SLIDER / SCROLLBAR DINÁMICO ---
+document.addEventListener('DOMContentLoaded', function() {
+	const sliders = document.querySelectorAll('.tipo-campo-barra');
+
+	function updateSliderBackground(slider) {
+		const min = slider.min || 0;
+		const max = slider.max || 100;
+		const value = slider.value;
+		const percentage = ((value - min) / (max - min)) * 100;
+		slider.style.setProperty('--value', percentage + '%');
+	}
+
+	sliders.forEach(function(slider) {
+		// Inicializar con el valor actual
+		updateSliderBackground(slider);
+
+		// Actualizar cuando cambia el valor
+		slider.addEventListener('input', function() {
+			updateSliderBackground(this);
+		});
+	});
+});
