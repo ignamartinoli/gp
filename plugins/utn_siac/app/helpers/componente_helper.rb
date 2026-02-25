@@ -161,25 +161,30 @@ module ComponenteHelper
         thead = content_tag(:thead) do
           content_tag(:tr) do
             content_tag(:th, 'Nivel') +
-              content_tag(:th, 'Número') +
-              content_tag(:th, 'Materia') +
-              content_tag(:th, 'Se Dicta') +
-              content_tag(:th, 'Docentes')
+            content_tag(:th, 'Número') +
+            content_tag(:th, 'Materia') +
+            content_tag(:th, 'Se Dicta') +
+            content_tag(:th, 'Docentes')
           end
         end
 
         tbody = content_tag(:tbody) do
           materias_para_plantel.each do |fila|
-            concat render_fila_plantel(campo, fila[:nivel], fila[:numero], fila[:materia])
+            concat render_fila_plantel(
+              campo,
+              fila[:nivel],
+              fila[:numero],
+              fila[:materia]
+            )
           end
 
           if defined?(@materias) && @materias.respond_to?(:current_page)
             concat(
               content_tag(:tr, class: 'paginationTr') do
-                content_tag(:td, colspan: 5) do
+                content_tag(:td, colspan: 4) do
                   content_tag(
                     :div,
-                    paginate(@materias, params: request.query_parameters, remote: false),
+                    paginate(@materias, params: request.query_parameters,remote: false),
                     class: 'pagination_menu'
                   )
                 end
@@ -187,6 +192,7 @@ module ComponenteHelper
             )
           end
         end
+
 
         thead + tbody
       end
@@ -198,18 +204,468 @@ module ComponenteHelper
   def render_fila_plantel(campo, nivel, numero, materia)
     content_tag(:tr) do
       content_tag(:td, nivel || '-') +
-        content_tag(:td, numero || '-') +
-        content_tag(:td, materia.to_s) +
-        content_tag(:td) do
-          check_box_tag('materias[][se_dicta]', '1', true)
-        end +
-        content_tag(:td) do
-          content_tag(:div, class: 'docentes-container', data: { materia: materia }) do
-            content_tag(:div, 'Sin docentes cargados', class: 'docentes-empty') +
-              render_boton_agregar_docente(campo, materia)
-          end
+      content_tag(:td, numero || '-') +
+      content_tag(:td, materia) +
+      content_tag(:td) do
+        check_box_tag(
+          'materias[][se_dicta]',  # nombre (ajustable)
+          '1',                     # value
+          true                     # ✔ marcado por defecto
+        )
+      end + 
+      content_tag(:td) do
+        content_tag(:div, class: 'docentes-container', data: { materia: materia }) do
+          content_tag(:div, 'Sin docentes cargados', class: 'docentes-empty') +
+          render_boton_agregar_docente(campo, materia)
         end
+      end
     end
+  end
+
+  def render_modal_docente(campo)
+    content_tag(:div,
+      id: "modal_docente_#{campo.id}",
+      title: 'Carga de Docente',   # 👈 CLAVE
+      style: 'display:none;'
+    ) do
+      render_modal_docente_contenido(campo)
+    end
+  end
+
+  def materias_para_plantel
+    filas = if defined?(@materias) && @materias.any?
+      @materias
+    else
+      materias_mockeadas
+    end
+
+    filas.map do |m|
+      codigo = m['codigo_materia'] || m[:codigo_materia]
+      nombre = m['nombre']         || m[:nombre]
+
+      parsed = parse_codigo_materia(codigo)
+
+      {
+        nivel:   parsed[:nivel],
+        numero:  parsed[:numero],
+        materia: nombre
+      }
+    end
+  end
+
+  def materias_mockeadas
+    [
+      { codigo_materia: '5-2023-101', nombre: 'Didáctica General' },
+      { codigo_materia: '5-2023-202', nombre: 'Práctica Docente I' }
+    ]
+  end
+
+  def render_modal_docente_contenido(campo)
+    render_stepper +
+    render_step_identificacion +
+    render_step_datos_personales +
+    render_step_desempeno_academico +   # 👈 NUEVO
+    render_step_investigacion +
+    render_step_datos_laborales +
+    render_step_footer
+  end
+
+  def render_busqueda_cuit
+    content_tag(:fieldset, class: 'box') do
+      content_tag(:legend, 'Buscar docente por CUIT') +
+      content_tag(:div, class: 'd-flex gap-2') do
+        text_field_tag(
+          'docente[cuit]',
+          nil,
+          class: 'form-control',
+          placeholder: 'CUIT del docente',
+          data: {
+            step: 'identificacion',
+            path: 'docente.cuit',
+            required: true,
+            type: 'cuit'
+          }
+        ) +
+        button_tag('Buscar',
+          type: 'button',
+          class: 'btn btn-primary siac_button_secondary'
+        )
+      end +
+      content_tag(:div,
+        'Docente no encontrado',
+        class: 'alert alert-warning mt-2',
+        style: 'display:none;',
+        id: 'docente-no-encontrado'
+      )
+    end
+  end
+
+  def render_datos_personales
+    content_tag(:div, class: 'step-content', data: { step: 'datos_personales' }) do
+      content_tag(:fieldset, class: 'box datos-personales-step') do
+        content_tag(:legend, 'Datos personales') +
+
+        # 🔹 Nombre
+        content_tag(:div, class: 'mb-3') do
+          label_tag('docente_nombre', 'Nombre', class: 'form-label fw-bold') +
+          text_field_tag(
+            'docente[nombre]',
+            nil,
+            id: 'docente_nombre',
+            class: 'form-control',
+            placeholder: 'Nombre',
+            data: {
+              step: 'datos_personales',
+              path: 'docente.nombre',
+              required: true
+            }
+          )
+        end +
+
+        # 🔹 Apellido
+        content_tag(:div, class: 'mb-3') do
+          label_tag('docente_apellido', 'Apellido', class: 'form-label fw-bold') +
+          text_field_tag(
+            'docente[apellido]',
+            nil,
+            id: 'docente_apellido',
+            class: 'form-control',
+            placeholder: 'Apellido',
+            data: {
+              step: 'datos_personales',
+              path: 'docente.apellido',
+              required: true
+            }
+          )
+        end +
+
+        # 🔹 Fecha de nacimiento (ACLARADO)
+        content_tag(:div, class: 'mb-3') do
+          label_tag(
+            'docente_fecha_nacimiento',
+            'Fecha de nacimiento',
+            class: 'form-label fw-bold'
+          ) +
+          date_field_tag(
+            'docente[fecha_nacimiento]',
+            nil,
+            id: 'docente_fecha_nacimiento',
+            class: 'form-control',
+            data: {
+              step: 'datos_personales',
+              path: 'docente.fecha_nacimiento',
+              required: true,
+              type: 'date'
+            }
+          ) 
+        end +
+
+        # 🔹 Titulación
+        content_tag(:div, class: 'mb-3') do
+          label_tag(
+            'docente_titulacion',
+            'Titulación',
+            class: 'form-label fw-bold'
+          ) +
+          select_tag(
+            'docente[titulacion]',
+            options_for_select([
+              ['Seleccione titulación', ''],
+              ['Ingeniero/a', 'ingeniero'],
+              ['Licenciado/a', 'licenciado'],
+              ['Doctor/a', 'doctor'],
+              ['Maestro/a', 'maestro'],
+              ['Técnico/a', 'tecnico'],
+              ['Otro', 'otro']
+            ]),
+            id: 'docente_titulacion',
+            class: 'form-select',
+            data: {
+              step: 'datos_personales',
+              path: 'docente.titulacion',
+              required: true
+            }
+          )
+        end +
+
+        # 🔹 CV
+        content_tag(:div, class: 'mb-2') do
+          label_tag(
+            'docente_cv',
+            'Adjunte CV actualizado (solo PDF)',
+            class: 'form-label fw-bold'
+          ) +
+          file_field_tag(
+            'docente[cv]',
+            id: 'docente_cv',
+            class: 'form-control',
+            accept: 'application/pdf',
+            data: {
+              step: 'datos_personales',
+              path: 'docente.cv',
+              required: true,
+              type: 'file',
+              accept: 'pdf'
+            }
+          )
+        end
+      end
+    end
+  end
+
+  def render_step_desempeno_academico
+    cargos_docentes = Siac::DocentesRepository.cargos_docentes_catalogo
+
+    content_tag(:div, class: 'step-content') do
+      content_tag(:fieldset, class: 'box') do
+        content_tag(:legend, 'Desempeño académico') +
+
+        content_tag(:div, class: 'desempeno-grid') do
+
+          # 🧑‍🏫 Cargo docente
+          select_tag(
+            'docente[id_cargo_docente]',
+            options_for_select(
+              [['Seleccione cargo docente', '']] +
+              Siac::DocentesRepository.cargos_docentes_catalogo.map do |c|
+                [c['nombre'], c['id_cargo']]
+              end
+            ),
+            class: 'form-select',
+            data: {
+              step: 'desempeno',
+              path: 'desempeno.cargo_docente_id',
+              required: true
+            }
+          ) +
+
+          # ⏱ Horas que dicta
+          number_field_tag(
+            'docente[horas_dictado]',
+            nil,
+            min: 1,
+            class: 'form-control',
+            placeholder: 'Horas semanales de dictado',
+            data: {
+              step: 'desempeno',
+              path: 'desempeno.horas_dictadas',
+              required: true,
+              type: 'number',
+              min: 1
+            }
+          ) +
+
+          # 🏫 Comisión (por ahora vacío)
+          select_tag(
+            'docente[id_comision]',
+            options_for_select([
+              ['Seleccione comisión', '']
+            ]),
+            class: 'form-select'
+          )
+
+        end
+      end
+    end
+  end
+
+  def render_datos_investigacion(grupos: [], centros: [])
+    content_tag(:fieldset, class: 'box mt-3', id: 'investigacion-step',
+                data: {
+                  grupos: grupos.to_json,
+                  centros: centros.to_json
+                }) do
+
+      content_tag(:legend, 'Investigación') +
+
+      content_tag(:div, class: 'proyectos-container') do
+        render_proyecto_investigacion(0)
+      end +
+
+      content_tag(
+        :button,
+        '+ Agregar otro proyecto',
+        type: 'button',
+        class: 'btn btn-secondary mt-3 siac_button_secondary',
+        id: 'agregar-proyecto-investigacion'
+      )
+    end
+  end
+
+  def render_proyecto_investigacion(index)
+    cargos_investigacion = Siac::DocentesRepository.cargos_investigacion_catalogo
+
+    content_tag(:div, class: 'proyecto-investigacion mb-3', data: { index: index }) do
+
+      text_field_tag(
+        "docente[proyectos][#{index}][nombre]",
+        nil,
+        class: 'form-control mb-2 investigacion_nombre',
+        placeholder: 'Nombre del proyecto de investigación'
+      ) +
+
+      # 🆕 CARGO INVESTIGACIÓN
+      select_tag(
+        "docente[proyectos][#{index}][id_cargo_investigacion]",
+        options_for_select(
+          [['Seleccione cargo de investigación', '']] +
+          cargos_investigacion.map { |c| [c['nombre'], c['id_cargo']] }
+        ),
+        class: 'form-select mb-2'
+      ) +
+
+      select_tag(
+        "docente[proyectos][#{index}][tipo_encuadre]",
+        options_for_select([
+          ['Seleccione tipo', ''],
+          ['Grupo de investigación', 'grupo'],
+          ['Centro de investigación', 'centro']
+        ]),
+        class: 'form-select mb-2 tipo-encuadre-select'
+      ) +
+
+      select_tag(
+        "docente[proyectos][#{index}][referencia_id]",
+        options_for_select([['Seleccione grupo o centro', '']]),
+        class: 'form-select mb-2 grupo-centro-select'
+      ) +
+
+      select_tag(
+        "docente[proyectos][#{index}][linea_accion]",
+        options_for_select([
+          ['Seleccione línea', ''],
+          ['Alimentos', 1],
+          ['Análisis de Señales, Modelados y Simulación', 2],
+          ['Aplicaciones Mecánicas y Mecatrónica', 3],
+          ['Electrónica, Computación y Comunicaciones', 4],
+          ['Estructura y construcciones civiles', 5],
+          ['Ingeniería Clínica y Bioingeniería', 6],
+          ['Ingeniería de Procesos, Biotecnología y Tecnología de Alimentos', 7],
+          ['Materiales', 8],
+          ['Medio Ambiente, Contingencias y Desarrollo Sustentable', 9],
+          ['Procesos y productos', 10],
+          ['Sistemas de Información e Informática', 11],
+          ['Tecnología Educativa y de Enseñanza de la Ingeniería', 12],
+          ['Tecnologías organizacionales', 13],
+          ['Transporte y Vías de la Comunicación', 14]
+        ]),
+        class: 'form-select mb-2'
+      ) +
+
+      number_field_tag(
+        "docente[proyectos][#{index}][horas_semanales]",
+        nil,
+        min: 1,
+        class: 'form-control',
+        placeholder: 'Horas semanales dedicadas'
+      )
+    end
+  end
+
+  def render_datos_laborales
+    content_tag(:fieldset, class: 'box mt-3 datos-laborales-step') do
+      content_tag(:legend, 'Datos laborales') +
+
+      content_tag(:div, class: 'empresa-row') do
+        text_field_tag(
+          'empresa[cuit]',
+          nil,
+          class: 'form-control empresa-cuit',
+          placeholder: 'CUIT de la empresa'
+        ) +
+
+        button_tag(
+          'Consultar empresa',
+          type: 'button',
+          class: 'btn btn-outline-secondary siac_button_secondary consultar-empresa-btn'
+        )
+      end +
+
+      content_tag(
+        :div,
+        '—',
+        id: 'empresa_nombre',
+        class: 'empresa-razon-social'
+      )
+    end
+  end
+
+  def render_modal_footer
+    content_tag(:div, class: 'mt-3 text-end') do
+      button_tag('Cancelar', type: 'button', class: 'btn btn-secondary siac_button', onclick: 'hideModal(this);') +
+      button_tag('Agregar docente', type: 'button', class: 'btn btn-primary ms-2 siac_button')
+    end
+  end
+
+  def render_boton_agregar_docente(campo, materia)
+    link_to 'Agregar docente',
+            '#',
+            class: 'btn-agregar-docente',
+            data: { materia: materia },
+            onclick: "openDocenteDialog('modal_docente_#{campo.id}'); return false;"  
+  end
+
+  def render_stepper
+    content_tag(:div, class: 'stepper') do
+      %w[
+        Identificación
+        Datos\ personales
+        Desempeño\ académico
+        Investigación
+        Datos\ laborales
+      ].map.with_index do |label, i|
+        content_tag(:div, label, class: "step #{i == 0 ? 'active' : ''}")
+      end.join.html_safe
+    end
+  end
+
+  def render_step_identificacion
+    content_tag(:div, class: 'step-content active') do
+      render_busqueda_cuit
+    end
+  end
+
+  def render_step_datos_personales
+    render_datos_personales
+  end
+
+  def render_step_investigacion
+    content_tag(:div, class: 'step-content') do
+      render_datos_investigacion(
+        grupos:  @grupos_investigacion || [],
+        centros: @centros_investigacion || []
+      )
+    end
+  end
+
+  def render_step_datos_laborales
+    content_tag(:div, class: 'step-content') do
+      render_datos_laborales
+    end
+  end
+
+  def render_step_footer
+    content_tag(:div, class: 'step-buttons') do
+      button_tag('Anterior', type: 'button', class: 'step-btn prev') +
+      button_tag('Siguiente', type: 'button', class: 'step-btn next')
+    end
+  end
+
+  def parse_codigo_materia(codigo)
+    return { nivel: nil, numero: nil } if codigo.blank?
+
+    parte = codigo.to_s.split('-')[2]
+    return { nivel: nil, numero: nil } if parte.blank?
+
+    nivel  = parte[0]
+    numero = parte.length > 1 ? parte[1..-1] : nil
+
+    { nivel: nivel, numero: numero }
+  end
+
+  # Fallback genérico
+  def render_generic_field(campo)
+    text_field_tag("campo_#{campo.id}", nil, class: 'form-control', placeholder: 'Campo genérico')
   end
 
   ##############################################
