@@ -158,6 +158,23 @@ class SiacClienteController < ApplicationController
     campos_por_componente = campos_rows.group_by { |c| c['id_componente'].to_i }
 
     # ============================================================
+    # 2.b) TIPOS de campo (CLAVE para render_field_for)
+    # ============================================================
+    tipos_rows = SiacRecord.connection.exec_query(<<~SQL, "SIAC").to_a
+      SELECT id_tipo, nombre, descripcion, activo
+      FROM public."SIAC_TiposCampo"
+    SQL
+
+    tipos_por_id = tipos_rows.each_with_object({}) do |t, h|
+      h[t["id_tipo"].to_i] = OpenStruct.new(
+        id: t["id_tipo"].to_i,
+        nombre: t["nombre"],
+        descripcion: t["descripcion"],
+        activo: (t["activo"].to_s == "1")
+      )
+    end
+
+    # ============================================================
     # 3) DIMENSIONES (SIAC) sólo las que aparecen en componentes
     # ============================================================
     dimension_ids = componentes_rows.map { |r| r['id_dimension'].to_i }.uniq
@@ -192,19 +209,36 @@ class SiacClienteController < ApplicationController
       comp_id = r['id_componente'].to_i
 
       campos_objs = (campos_por_componente[comp_id] || []).map do |c|
-        cid = c['id_campo'].to_i
+        campo_id = c['id_campo'].to_i
+        tipo_id  = c['id_tipo_campo'].to_i
 
         OpenStruct.new(
-          id: cid,
-          componente_id: c['id_componente'].to_i,
+          id: campo_id,
+          id_campo: campo_id,
+          id_componente: c['id_componente'].to_i,
+
           nombre: c['nombre_campo'],
-          obligatorio: (c['es_obligatorio'].to_s == "1"),
+          nombre_campo: c['nombre_campo'],
+          pregunta: c['pregunta_orientadora'],
           pregunta_orientadora: c['pregunta_orientadora'],
-          tipo_campo_id: c['id_tipo_campo'].to_i,
+
+          es_obligatorio: (c['es_obligatorio'].to_s == "1"),
           permite_archivos: (c['permite_archivos'].to_s == "1"),
-          autoevaluacion: (c['es_autovaluacion'].to_s == "1") ? 1 : 0, # la vista usa .autoevaluacion.to_i
-          campo_padre_id: c['id_campo_padre'],
-          opciones: (opciones_por_campo[cid] || []).map { |o| OpenStruct.new(id: o['id_opcion'].to_i, nombre: o['nombre_opcion']) }
+          autoevaluacion: (c['es_autovaluacion'].to_s == "1") ? 1 : 0,
+
+          id_tipo_campo: tipo_id,
+          tipo_campo: tipos_por_id[tipo_id],  # <-- CLAVE (campo.tipo_campo.nombre)
+
+          id_campo_padre: c['id_campo_padre']&.to_i,
+          activo: (c['activo'].to_s == "1"),
+
+          opciones_campos: (opciones_por_campo[campo_id] || []).map do |o|
+            OpenStruct.new(
+              id: o['id_opcion'].to_i,
+              nombre_opcion: o['nombre_opcion'],
+              activo: (o['activo'].to_s == "1")
+            )
+          end
         )
       end
 
