@@ -13,6 +13,7 @@ class ConvocatoriaController < ApplicationController
 
   def load_titulaciones
     @titulaciones = [
+      ['Carrera Corta', 1],
       ['Carrera de Grado', 3],
       ['Ciclo de Licenciatura', 11],
       ['Tecnico Superior', 12],
@@ -586,6 +587,7 @@ class ConvocatoriaController < ApplicationController
     id = params[:id].to_i
 
     @titulaciones = [
+      ['Carrera Corta', 1],
       ['Carrera de Grado', 3],
       ['Ciclo de Licenciatura', 11],
       ['Tecnico Superior', 12],
@@ -826,53 +828,59 @@ class ConvocatoriaController < ApplicationController
  end
 
   def pdf_preview
-    # 1) Tomar params de manera tolerante (con o sin scope convocatoria)
     raw = params[:convocatoria].presence || params
 
-    # 2) Construir un objeto liviano con los campos que usa el PDF
     @convocatoria = OpenStruct.new(
-      resolucion:      raw[:resolucion].to_s,
-      nombre:          raw[:nombre].to_s,
-      titulaciones:    raw[:titulaciones].to_s,
-      fecha_inicio:    parse_date_param(raw[:fecha_inicio]),
-      fecha_hasta:     parse_date_param(raw[:fecha_hasta]),
+      resolucion: raw[:resolucion].to_s,
+      nombre: raw[:nombre].to_s,
+      titulaciones: raw[:titulaciones].to_s,
 
-      # si después querés usar estos en el PDF:
+      fecha_inicio: parse_date_param(raw[:fecha_inicio]),
+      fecha_hasta:  parse_date_param(raw[:fecha_hasta]),
+
+      fecha_fin_capacitacion: parse_date_param(raw[:fecha_fin_capacitacion]),
+      fecha_fin_carga:        parse_date_param(raw[:fecha_fin_carga]),
+      fecha_fin_revision:     parse_date_param(raw[:fecha_fin_revision]),
+      fecha_fin_correcciones: parse_date_param(raw[:fecha_fin_correcciones]),
+      fecha_fin_auditoria:    parse_date_param(raw[:fecha_fin_auditoria]),
+
       especialidad_ids: Array(raw[:especialidad_ids]).reject(&:blank?).map(&:to_i),
       sedes_codigos:    Array(raw[:sedes_codigos]).reject(&:blank?).map(&:to_i),
       componentes_codigos: Array(raw[:componentes_codigos]).reject(&:blank?).map(&:to_i)
     )
 
-    pdf = Prawn::Document.new(
-      page_size: "A4",
-      margin: [110, 60, 70, 60]
-    )
+    template_path = Rails.root.join(
+      "plugins/utn_siac/config/pdf_templates/convocatoria_v1.yml"
+    ).to_s
 
-    header(pdf)
-    footer(pdf)
+    pdf_bytes = Siac::Convocatoria::PdfGenerator.new(
+      data: @convocatoria,
+      template_path: template_path,
+      strict_placeholders: false
+    ).render
 
-    lugar_y_fecha(pdf)
-    introduccion(pdf)
+    filename_base = (@convocatoria.nombre.presence || "preview").to_s
+    safe_filename = filename_base.gsub(/[^\p{Alnum}\s\-_]/, "").strip.gsub(/\s+/, "_")
+    safe_filename = "preview" if safe_filename.blank?
 
-    objetivo(pdf)
-    alcance(pdf)
-    responsables_y_proceso(pdf)
-
-    pdf.start_new_page
-    impacto_y_resultados(pdf)
-    tabla_resultados(pdf)
-    ciclo_de_vida(pdf)
-
-    pdf.start_new_page
-    etapas(pdf)
-
-    pdf.start_new_page
-    explicacion_uso(pdf)
-
-    send_data pdf.render,
-              filename: "Convocatoria_#{(@convocatoria.nombre.presence || 'preview')}.pdf",
+    send_data pdf_bytes,
+              filename: "Convocatoria_#{safe_filename}.pdf",
               type: "application/pdf",
               disposition: "attachment"
+
+  rescue => e
+    msg = "[SIAC][PDF] EXCEPTION #{e.class}: #{e.message}"
+    bt  = e.backtrace.first(20).join("\n")
+
+    # 1) log (si aparece)
+    Rails.logger.error(msg)
+    Rails.logger.error(e.backtrace.join("\n"))
+
+    # 2) stdout (aunque el logger no esté)
+    puts msg
+    puts bt
+
+    render json: { error: "Error en la generación del PDF", detail: e.message, trace: bt }, status: 500
   end
 
 
@@ -1365,6 +1373,7 @@ class ConvocatoriaController < ApplicationController
     @convocatoria ||= OpenStruct.new
 
     @titulaciones = [
+      ['Carrera Corta', 1],
       ['Carrera de Grado', 3],
       ['Ciclo de Licenciatura', 11],
       ['Tecnico Superior', 12],
