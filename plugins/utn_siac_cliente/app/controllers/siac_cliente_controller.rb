@@ -315,13 +315,18 @@ class SiacClienteController < ApplicationController
 
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
+    http.open_timeout = 5
+    http.read_timeout = 8
 
-    response = http.request(request)
+    begin
+      response = http.request(request)
+    rescue OpenSSL::SSL::SSLError, SocketError, Net::OpenTimeout, Net::ReadTimeout, Errno::ECONNREFUSED => e
+      Rails.logger.error("[NOSIS] Error consultando: #{e.class} #{e.message}")
+      return render json: { error: 'Error consultando NOSIS' }, status: 502
+    end
 
     data = JSON.parse(response.body) rescue {}
-
-    razon_social =
-      data.dig('EntidadesEncontradas', 0, 'RazonSocial')
+    razon_social = data.dig('EntidadesEncontradas', 0, 'RazonSocial')
 
     if razon_social.present?
       render json: { razon_social: razon_social }

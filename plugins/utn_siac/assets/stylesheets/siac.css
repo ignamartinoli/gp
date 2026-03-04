@@ -1123,35 +1123,129 @@
 }
 
 
+/* ============================= */
+/* Campos CUIT docente y empresa */
+/* ============================= */
 
-#docente_cuit , #empresa_cuit{
-  margin: 16px;
+[id^="modal_docente_"] input[name="docente[cuit]"],
+[id^="modal_docente_"] input[name="empresa[cuit]"] {
+  margin: 16px 0;
   width: 35%;
-  font-size: 24px;
+  font-size: 20px;
 }
 
-#docente-no-encontrado {
-  font-size: 18px;
-  padding: 12px;
-  font-weight: bolder;
+
+/* ============================= */
+/* Mensaje docente encontrado */
+/* ============================= */
+
+[id^="modal_docente_"] #docente-no-encontrado {
+  font-size: 16px;
+  padding: 10px;
+  font-weight: 600;
 }
 
 /* rojo cuando falla */
-#docente-no-encontrado.is-error {
-  color: red;
+[id^="modal_docente_"] #docente-no-encontrado.is-error {
+  color: #c62828;
 }
 
 /* verde cuando ok */
-#docente-no-encontrado.is-ok {
-  color: green;
-}
-#docente_titulacion {
-  width: 20%;
+[id^="modal_docente_"] #docente-no-encontrado.is-ok {
+  color: #2e7d32;
 }
 
-#docente_apellido, #docente_nombre {
+
+/* ============================= */
+/* Datos personales */
+/* ============================= */
+
+[id^="modal_docente_"] input[name="docente[apellido]"],
+[id^="modal_docente_"] input[name="docente[nombre]"] {
   width: 30%;
-  margin: 16px;
+  /*margin: 16px 8px 16px 0;*/
+}
+
+[id^="modal_docente_"] select[name="docente[titulacion]"] {
+  width: 25%;
+}
+
+/* ============================= */
+/* STEP DATOS LABORALES */
+/* ============================= */
+
+[id^="modal_docente_"] .datos-laborales-step {
+  margin-top: 20px;
+  padding: 20px;
+  background: #f4f6fa;
+  border-radius: 14px;
+}
+
+/* Fila CUIT + botón */
+[id^="modal_docente_"] .empresa-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+[id^="modal_docente_"] .empresa-row input[name="empresa[cuit]"] {
+  flex: 1;
+  max-width: 420px;
+  font-size: 20px;
+  padding: 10px 14px;
+}
+
+[id^="modal_docente_"] .empresa-row button {
+  padding: 10px 18px;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+/* Mensaje empresa (error / resultado) */
+[id^="modal_docente_"] .empresa-razon-social {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px dashed #cfd6e3;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2f3b52;
+}
+
+/* Horas obligatorias */
+[id^="modal_docente_"] input[name="empresa[horas_trabajo_empresa]"] {
+  width: 260px;
+  padding: 8px 12px;
+  font-size: 15px;
+  margin-bottom: 18px;
+}
+
+/* Contenedor horarios */
+[id^="modal_docente_"] .datos-laborales-step .horarios-row {
+  display: flex;
+  gap: 20px;
+}
+
+/* Horarios */
+[id^="modal_docente_"] [data-role="empresa_hora_inicio"],
+[id^="modal_docente_"] [data-role="empresa_hora_salida"] {
+  flex: 1;
+  max-width: 240px;
+  padding: 8px 12px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  [id^="modal_docente_"] .empresa-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  [id^="modal_docente_"] .horarios-row {
+    flex-direction: column;
+  }
 }
 
 
@@ -1164,6 +1258,7 @@
   cursor: pointer;
   border-radius: 6px;
   transition: all 0.2s ease;
+  margin: 12px;
 }
 
 .siac_button_secondary:hover {
@@ -1239,7 +1334,7 @@
 }
 
 /* Botón agregar */
-#agregar-proyecto-investigacion {
+.agregar-proyecto-investigacion {
   align-self: flex-start;
   margin-top: 20px;
   margin-left: 40%;
@@ -1254,6 +1349,13 @@
   .proyecto-investigacion > * {
     grid-column: 1 / -1 !important;
   }
+}
+
+.proyecto-investigacion select.form-select,
+.proyecto-investigacion input.form-control {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .desempeno-grid {
@@ -1596,4 +1698,24 @@
 .completion-stat-value {
   font-weight: 700;
   color: #374151;
+}
+
+/*DOCENTE*/
+
+.alert-success {
+  background: #edf7f1;
+  color: #1e7e34;
+  border: 1px solid #c3e6cb;
+}
+
+.alert-warning {
+  background: #fff8e5;
+  color: #856404;
+  border: 1px solid #ffeeba;
+}
+
+.alert-danger {
+  background: #fde2e2;
+  color: #b02a37;
+  border: 1px solid #f5c2c7;
 }

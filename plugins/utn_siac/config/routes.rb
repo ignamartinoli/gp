@@ -29,13 +29,17 @@ get 'componentes/:id/preview', to: 'componente#preview', as: 'preview_componente
 #Siac
 get 'siac/personas_convocatoria', to: 'siac#personas_convocatoria'
 
-namespace :siac do
-  namespace :docentes do
-    get  'buscar',    to: 'docentes#buscar'
-    get  'datos',     to: 'docentes#datos'
-    get  'catalogos', to: 'docentes#catalogos'
-    post 'guardar',   to: 'docentes#guardar'
-  end
-end
+
+get  'docentes/buscar',    to: 'docentes#buscar'
+get  'docentes/datos',     to: 'docentes#datos'
+get  'docentes/catalogos', to: 'docentes#catalogos'
+post 'docentes/guardar',   to: 'docentes#guardar'
+get  'docentes/por_materia', to: 'docentes#por_materia'
+get  'docentes/por_cuit',    to: 'docentes#por_cuit'
 
 get 'siac/cargos_docentes', to: 'siac#cargos_docentes'
+
+scope '/siac_cliente' do
+  get 'buscar_empresa',       to: 'siac_cliente#buscar_empresa',       as: :siac_cliente_buscar_empresa
+  get 'buscar_empresa_nosis', to: 'siac_cliente#buscar_empresa_nosis', as: :siac_cliente_buscar_empresa_nosis
+end

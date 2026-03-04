@@ -170,11 +170,13 @@ module ComponenteHelper
 
         tbody = content_tag(:tbody) do
           materias_para_plantel.each do |fila|
+            Rails.logger.info("PLANTEL fila=#{fila.inspect}")
             concat render_fila_plantel(
               campo,
               fila[:nivel],
               fila[:numero],
-              fila[:materia]
+              fila[:materia],
+              fila[:codigo_materia]       # <- NUEVO
             )
           end
 
@@ -184,7 +186,7 @@ module ComponenteHelper
                 content_tag(:td, colspan: 4) do
                   content_tag(
                     :div,
-                    paginate(@materias, params: request.query_parameters,remote: false),
+                    paginate(@materias, params: request.query_parameters, remote: false),
                     class: 'pagination_menu'
                   )
                 end
@@ -193,7 +195,6 @@ module ComponenteHelper
           end
         end
 
-
         thead + tbody
       end
 
@@ -201,22 +202,21 @@ module ComponenteHelper
     end
   end
 
-  def render_fila_plantel(campo, nivel, numero, materia)
-    content_tag(:tr) do
+  def render_fila_plantel(campo, nivel, numero, materia, codigo_materia)
+    content_tag(:tr, data: { codigo_materia: codigo_materia }) do
       content_tag(:td, nivel || '-') +
       content_tag(:td, numero || '-') +
       content_tag(:td, materia) +
       content_tag(:td) do
-        check_box_tag(
-          'materias[][se_dicta]',  # nombre (ajustable)
-          '1',                     # value
-          true                     # ✔ marcado por defecto
-        )
-      end + 
+        check_box_tag('materias[][se_dicta]', '1', true)
+      end +
       content_tag(:td) do
-        content_tag(:div, class: 'docentes-container', data: { materia: materia }) do
+        content_tag(:div,
+          class: 'docentes-container',
+          data: { materia: materia.to_s, codigo_materia: codigo_materia.to_s }
+        ) do
           content_tag(:div, 'Sin docentes cargados', class: 'docentes-empty') +
-          render_boton_agregar_docente(campo, materia)
+          render_boton_agregar_docente(campo, materia, codigo_materia)
         end
       end
     end
@@ -246,9 +246,10 @@ module ComponenteHelper
       parsed = parse_codigo_materia(codigo)
 
       {
-        nivel:   parsed[:nivel],
-        numero:  parsed[:numero],
-        materia: nombre
+        codigo_materia: codigo,          # <- NUEVO (clave técnica)
+        nivel:          parsed[:nivel],
+        numero:         parsed[:numero],
+        materia:        nombre
       }
     end
   end
@@ -260,17 +261,9 @@ module ComponenteHelper
     ]
   end
 
-  def render_modal_docente_contenido(campo)
-    render_stepper +
-    render_step_identificacion +
-    render_step_datos_personales +
-    render_step_desempeno_academico +   # 👈 NUEVO
-    render_step_investigacion +
-    render_step_datos_laborales +
-    render_step_footer
-  end
 
-  def render_busqueda_cuit
+
+  def render_busqueda_cuit(campo)
     content_tag(:fieldset, class: 'box') do
       content_tag(:legend, 'Buscar docente por CUIT') +
       content_tag(:div, class: 'd-flex gap-2') do
@@ -279,23 +272,19 @@ module ComponenteHelper
           nil,
           class: 'form-control',
           placeholder: 'CUIT del docente',
-          data: {
-            step: 'identificacion',
-            path: 'docente.cuit',
-            required: true,
-            type: 'cuit'
-          }
+          data: { required: true, type: 'cuit' }
         ) +
         button_tag('Buscar',
           type: 'button',
-          class: 'btn btn-primary siac_button_secondary'
+          class: 'btn btn-primary siac_button_secondary',
+          data: { action: 'buscar-docente' }
         )
       end +
       content_tag(:div,
         'Docente no encontrado',
-        class: 'alert alert-warning mt-2',
-        style: 'display:none;',
-        id: 'docente-no-encontrado'
+        class: 'alert alert-warning mt-2 ',
+        style: 'display:none; padding: 12px;',
+        id: "docente-no-encontrado-#{campo.id}"
       )
     end
   end
@@ -334,6 +323,23 @@ module ComponenteHelper
             data: {
               step: 'datos_personales',
               path: 'docente.apellido',
+              required: true
+            }
+          )
+        end +
+
+         # 🔹 Legajo Docente
+        content_tag(:div, class: 'mb-3') do
+          label_tag('docente_legajo', 'Legajo', class: 'form-label fw-bold') +
+          text_field_tag(
+            'docente[legajo]',
+            nil,
+            id: 'docente_legajo',
+            class: 'form-control',
+            placeholder: 'Legajo Docente',
+            data: {
+              step: 'datos_personales',
+              path: 'docente.legajo',
               required: true
             }
           )
@@ -470,7 +476,8 @@ module ComponenteHelper
   end
 
   def render_datos_investigacion(grupos: [], centros: [])
-    content_tag(:fieldset, class: 'box mt-3', id: 'investigacion-step',
+    content_tag(:fieldset,
+                class: 'box mt-3 investigacion-step',
                 data: {
                   grupos: grupos.to_json,
                   centros: centros.to_json
@@ -478,7 +485,7 @@ module ComponenteHelper
 
       content_tag(:legend, 'Investigación') +
 
-      content_tag(:div, class: 'proyectos-container') do
+      content_tag(:div, class: 'proyectos-container', data: { target: 'proyectos' }) do
         render_proyecto_investigacion(0)
       end +
 
@@ -486,8 +493,8 @@ module ComponenteHelper
         :button,
         '+ Agregar otro proyecto',
         type: 'button',
-        class: 'btn btn-secondary mt-3 siac_button_secondary',
-        id: 'agregar-proyecto-investigacion'
+        class: 'btn btn-secondary mt-3 siac_button_secondary agregar-proyecto-investigacion',
+        data: { action: 'investigacion:add' }
       )
     end
   end
@@ -495,16 +502,18 @@ module ComponenteHelper
   def render_proyecto_investigacion(index)
     cargos_investigacion = Siac::DocentesRepository.cargos_investigacion_catalogo
 
-    content_tag(:div, class: 'proyecto-investigacion mb-3', data: { index: index }) do
+    content_tag(:div,
+                class: 'proyecto-investigacion mb-3',
+                data: { proyecto_item: true, index: index }) do
 
       text_field_tag(
         "docente[proyectos][#{index}][nombre]",
         nil,
-        class: 'form-control mb-2 investigacion_nombre',
+        class: 'form-control mb-2',
         placeholder: 'Nombre del proyecto de investigación'
       ) +
 
-      # 🆕 CARGO INVESTIGACIÓN
+      # Cargo investigación (span 2 por CSS select[name*="id_cargo_investigacion"])
       select_tag(
         "docente[proyectos][#{index}][id_cargo_investigacion]",
         options_for_select(
@@ -514,6 +523,7 @@ module ComponenteHelper
         class: 'form-select mb-2'
       ) +
 
+      # Tipo encuadre (span 2 por CSS .tipo-encuadre-select)
       select_tag(
         "docente[proyectos][#{index}][tipo_encuadre]",
         options_for_select([
@@ -521,15 +531,20 @@ module ComponenteHelper
           ['Grupo de investigación', 'grupo'],
           ['Centro de investigación', 'centro']
         ]),
-        class: 'form-select mb-2 tipo-encuadre-select'
+        class: 'form-select mb-2 tipo-encuadre-select',
+        data: { action: 'investigacion:tipo_change' }
       ) +
 
+      # Referencia (grupo/centro) (span 2 por CSS .grupo-centro-select)
       select_tag(
         "docente[proyectos][#{index}][referencia_id]",
         options_for_select([['Seleccione grupo o centro', '']]),
-        class: 'form-select mb-2 grupo-centro-select'
+        class: 'form-select mb-2 grupo-centro-select',
+        data: { role: 'investigacion-referencia' },
+        disabled: true
       ) +
 
+      # Línea (span 4 por CSS select[name*="linea_accion"])
       select_tag(
         "docente[proyectos][#{index}][linea_accion]",
         options_for_select([
@@ -552,17 +567,27 @@ module ComponenteHelper
         class: 'form-select mb-2'
       ) +
 
+      # Horas (span 2 por CSS input[type="number"])
       number_field_tag(
         "docente[proyectos][#{index}][horas_semanales]",
         nil,
         min: 1,
-        class: 'form-control',
+        class: 'form-control mb-2',
         placeholder: 'Horas semanales dedicadas'
+      ) +
+
+      # Botón quitar
+      content_tag(
+        :button,
+        'Quitar',
+        type: 'button',
+        class: 'btn btn-link p-0 siac_button_secondary quitar-proyecto-investigacion',
+        data: { action: 'investigacion:remove' }
       )
     end
   end
 
-  def render_datos_laborales
+  def render_datos_laborales(campo)
     content_tag(:fieldset, class: 'box mt-3 datos-laborales-step') do
       content_tag(:legend, 'Datos laborales') +
 
@@ -571,22 +596,62 @@ module ComponenteHelper
           'empresa[cuit]',
           nil,
           class: 'form-control empresa-cuit',
-          placeholder: 'CUIT de la empresa'
+          placeholder: 'CUIT de la empresa',
+          inputmode: 'numeric'
         ) +
 
         button_tag(
           'Consultar empresa',
           type: 'button',
-          class: 'btn btn-outline-secondary siac_button_secondary consultar-empresa-btn'
+          class: 'btn btn-outline-secondary siac_button_secondary',
+          data: { action: 'empresa:consultar' }
         )
       end +
 
+      # Razón social (se completa por JS)
       content_tag(
         :div,
         '—',
-        id: 'empresa_nombre',
-        class: 'empresa-razon-social'
-      )
+        class: 'empresa-razon-social',
+        data: { target: 'empresa_nombre' }
+      ) +
+
+      # Nombre empresa “real” para persistencia (hidden)
+      hidden_field_tag(
+        'empresa[nombre_empresa]',
+        nil,
+        data: { target: 'empresa_nombre_input' }
+      ) +
+
+      # OBLIGATORIO por DB
+      content_tag(:div, class: 'mt-2') do
+        number_field_tag(
+          'empresa[horas_trabajo_empresa]',
+          nil,
+          min: 1,
+          class: 'form-control',
+          placeholder: 'Horas semanales (obligatorio)',
+          data: { required: true }
+        )
+      end +
+
+      # OPCIONALES
+      content_tag(:div, class: 'horarios-row') do
+        text_field_tag(
+          'empresa[hora_inicio]',
+          nil,
+          class: 'form-control',
+          placeholder: 'Hora inicio (opcional)',
+          data: { role: 'empresa_hora_inicio' }
+        ) +
+        text_field_tag(
+          'empresa[hora_salida]',
+          nil,
+          class: 'form-control',
+          placeholder: 'Hora salida (opcional)',
+          data: { role: 'empresa_hora_salida' }
+        )
+      end
     end
   end
 
@@ -597,12 +662,17 @@ module ComponenteHelper
     end
   end
 
-  def render_boton_agregar_docente(campo, materia)
-    link_to 'Agregar docente',
-            '#',
-            class: 'btn-agregar-docente',
-            data: { materia: materia },
-            onclick: "openDocenteDialog('modal_docente_#{campo.id}'); return false;"  
+  def render_boton_agregar_docente(campo, materia, codigo_materia)
+    link_to(
+      'Agregar docente',
+      '#',
+      class: 'btn-agregar-docente',
+      data: {
+        materia: materia.to_s,
+        codigo_materia: codigo_materia.to_s
+      },
+      onclick: "openDocenteDialog('modal_docente_#{campo.id}'); return false;"
+    )
   end
 
   def render_stepper
@@ -613,15 +683,16 @@ module ComponenteHelper
         Desempeño\ académico
         Investigación
         Datos\ laborales
+        Resumen
       ].map.with_index do |label, i|
         content_tag(:div, label, class: "step #{i == 0 ? 'active' : ''}")
       end.join.html_safe
     end
   end
 
-  def render_step_identificacion
+  def render_step_identificacion(campo)
     content_tag(:div, class: 'step-content active') do
-      render_busqueda_cuit
+      render_busqueda_cuit(campo)
     end
   end
 
@@ -638,9 +709,23 @@ module ComponenteHelper
     end
   end
 
-  def render_step_datos_laborales
+  def render_step_datos_laborales(campo)
     content_tag(:div, class: 'step-content') do
-      render_datos_laborales
+      render_datos_laborales(campo)
+    end
+  end
+
+  def render_step_resumen
+    content_tag(:div, class: 'step-content') do
+      content_tag(:fieldset, class: 'box mt-3 resumen-step') do
+        content_tag(:legend, 'Resumen') +
+
+        content_tag(:div, '', data: { target: 'resumen_materia' }) +
+        content_tag(:div, '', data: { target: 'resumen_personales' }) +
+        content_tag(:div, '', data: { target: 'resumen_academico' }) +
+        content_tag(:div, '', data: { target: 'resumen_investigacion' }) +
+        content_tag(:div, '', data: { target: 'resumen_laboral' })
+      end
     end
   end
 
@@ -686,11 +771,12 @@ module ComponenteHelper
   # render_step_desempeno_academico, render_step_investigacion, render_step_datos_laborales, render_step_footer
   def render_modal_docente_contenido(campo)
     render_stepper +
-      render_step_identificacion +
+      render_step_identificacion(campo) +
       render_step_datos_personales +
       render_step_desempeno_academico +
       render_step_investigacion +
-      render_step_datos_laborales +
+      render_step_datos_laborales(campo) +
+      render_step_resumen +
       render_step_footer
   end
 
@@ -760,10 +846,15 @@ module ComponenteHelper
 
     filas.map do |m|
       codigo = m['codigo_materia'] || m[:codigo_materia]
-      nombre = m['nombre']         || m[:nombre]
+      nombre = m['nombre_materia'] || m['nombre'] || m[:nombre_materia] || m[:nombre]
       parsed = parse_codigo_materia(codigo)
 
-      { nivel: parsed[:nivel], numero: parsed[:numero], materia: nombre }
+      {
+        nivel: parsed[:nivel],
+        numero: parsed[:numero],
+        materia: nombre,
+        codigo_materia: codigo # ✅ ESTE ERA EL FALTANTE
+      }
     end
   end
 
