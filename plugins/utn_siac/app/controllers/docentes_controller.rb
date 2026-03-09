@@ -55,7 +55,7 @@ class DocentesController < ApplicationController
     cliente = SiacCliente.find_by(user_id: User.current.id, activo: true)
     return render json: { ok: false, error: 'Cliente no configurado' }, status: 422 unless cliente
 
-    cuil = params[:cuil].to_s.strip
+    cuil = (params[:cuil] || params[:cuit]).to_s.strip
     return render json: { ok: false, error: 'CUIT/CUIL inválido' }, status: 400 unless cuil =~ /^\d{11}$/
 
     codigo = params[:codigo_materia].to_s.strip.presence
@@ -64,15 +64,17 @@ class DocentesController < ApplicationController
     persona = Siac::DocentesRepository.docente_basico_por_cuit(cuil: cuil)
     return render json: { ok: true, found: false } unless persona
 
-    ya_en_materia = Siac::DocentesRepository.cargo_activo_existente?(
-      cuil: cuil,
-      id_facultad: id_facultad,
-      codigo_materia: codigo
-    )
+    ya_en_materia = false
+    if codigo.present?
+      ya_en_materia = Siac::DocentesRepository.cargo_activo_existente?(
+        cuil: cuil,
+        id_facultad: id_facultad,
+        codigo_materia: codigo
+      )
+    end
 
-    # TODO: estos dos los implementamos en el repo y los devolvés
-    empleo = Siac::DocentesRepository.empleo_por_cuil(cuil: cuil)              # <- sin materia
-    investigacion = Siac::DocentesRepository.investigacion_por_cuil(cuil: cuil) # <- sin materia
+    Rails.logger.warn("CV DEBUG id_cv_adjunto=#{persona['id_cv_adjunto'].inspect}")
+    cv = Siac::DocentesRepository.cv_por_attachment_id(persona['id_cv_adjunto'])
 
     render json: {
       ok: true,
@@ -81,10 +83,12 @@ class DocentesController < ApplicationController
         cuil: persona['cuil'],
         nombre: persona['nombre'],
         apellido: persona['apellido'],
-        fecha_nacimiento: persona['fecha_nacimiento']
+        fecha_nacimiento: persona['fecha_nacimiento'],
+        legajo: persona['legajo'],
+        id_especialidad: persona['id_especialidad'],
+        tipo_especialidad: persona['tipo_especialidad_recibido']
       },
-      empleo: empleo,
-      investigacion: investigacion,
+      cv: cv,
       ya_en_materia: ya_en_materia
     }
   end
@@ -120,31 +124,22 @@ class DocentesController < ApplicationController
     id_facultad = cliente.regional_id
 
     docente = docente_params.to_h.symbolize_keys
-
-    tipo_especialidad = resolve_tipo_especialidad(docente[:id_especialidad])
-    return render json: { ok: false, error: 'Especialidad inválida' }, status: 422 unless tipo_especialidad
-
-    docente[:tipo_especialidad] = tipo_especialidad
     docente[:id_facultad] = id_facultad
 
-    # 1) insertar docente (y chequear p_resultado como ya hiciste)
-    rows = Siac::DocentesRepository.insertar_docente_result(**docente)
-    p_resultado = rows.first&.[]('p_resultado') || rows.first&.values&.first
-    if p_resultado.present? && p_resultado.to_i != 1
-      return render json: { ok: false, error: "SIAC_INSERTAR_DOCENTE rechazó (p_resultado=#{p_resultado})" }, status: 422
+    return render json: { ok: false, error: 'Titulación requerida' }, status: 422 if docente[:tipo_especialidad].blank?
+    return render json: { ok: false, error: 'Especialidad inválida' }, status: 422 if docente[:id_especialidad].blank?
+
+    unless Siac::DocentesRepository.docente_existe?(cuil: docente[:cuil])
+      rows = Siac::DocentesRepository.insertar_docente_result(**docente)
+      p_resultado = rows.first&.[]('p_resultado') || rows.first&.values&.first
+
+      if p_resultado.present? && p_resultado.to_i != 1
+        return render json: { ok: false, error: "SIAC_INSERTAR_DOCENTE rechazó (p_resultado=#{p_resultado})" }, status: 422
+      end
     end
 
-    # 2) evitar duplicado por materia
     cargo = cargo_params.to_h.symbolize_keys
-    #if Siac::DocentesRepository.cargo_activo_existente?(
-    #  codigo_materia: cargo[:codigo_materia],
-    #  id_facultad: id_facultad,
-    #  cuil: cargo[:cuil]
-    #)
-    #  return render json: { ok: false, error: 'Ese docente ya está cargado en esta materia.' }, status: 422
-    #end
 
-    # 3) insertar cargo
     Siac::DocentesRepository.insertar_cargo_docente(
       codigo_materia: cargo[:codigo_materia],
       id_facultad: id_facultad,
@@ -177,10 +172,8 @@ class DocentesController < ApplicationController
       :apellido,
       :legajo,
       :fecha_nacimiento,
-      :titulacion,          # ✅ agregalo
       :tipo_especialidad,
       :id_facultad,
-      :legajo,
       :id_especialidad
     ).to_h.symbolize_keys
   end

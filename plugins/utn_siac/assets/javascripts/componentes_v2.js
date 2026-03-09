@@ -55,19 +55,22 @@
   // Adds
   // ============================================================
   function addFromPrototype(container) {
-    const proto = container.dataset.prototype;
-    if (!proto) return;
+    const tpl = container.querySelector("template.campo-template");
+    if (!tpl) return;
 
     const key = uniqueKey();
-    container.insertAdjacentHTML("beforeend", proto.replaceAll("NEW_RECORD", key));
+    const html = tpl.innerHTML.replace(/NEW_RECORD/g, key);
+
+    container.insertAdjacentHTML("beforeend", html);
 
     const nuevo =
       container.querySelector(
         `.nested-fields[data-campo-key="${key}"], .nested-fields[data-index="${key}"]`
-      ) || container.lastElementChild;
+      ) || container.querySelector(".nested-fields:last-of-type");
 
     if (nuevo) {
       renderOpcionesCampo(nuevo);
+
       const po = nuevo.querySelector(".checkbox_pregunta_orientadora");
       if (po) togglePO(nuevo, po.checked, ".pregunta_orientadora_container");
     }

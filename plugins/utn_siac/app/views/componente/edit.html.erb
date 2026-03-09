@@ -71,12 +71,12 @@
     <h3 class="siac_title">Campos</h3>
     <hr>
 
-      <div id="campos-convo"
-          data-prototype='<%= j(
-            fields_for("componente[campos_attributes][NEW_RECORD]", Campo.new) do |cf|
-              render("campo_fields", cf: cf, idx: "NEW_RECORD", tipos_campo: @tipos_campo, autoeval: false)
-            end
-          ) %>'>
+    <div id="campos-convo">
+      <template class="campo-template">
+        <%= fields_for "componente[campos_attributes][NEW_RECORD]", Campo.new do |cf| %>
+          <%= render "campo_fields", cf: cf, idx: "NEW_RECORD", tipos_campo: @tipos_campo, autoeval: false %>
+        <% end %>
+      </template>
 
       <% (@componente.campos_convo || []).each do |campo| %>
         <%= fields_for "componente[campos_attributes][#{campo.id}]", campo do |cf| %>
@@ -95,19 +95,18 @@
     <h3 class="siac_title">Autoevaluación</h3>
     <hr>
 
-      <div id="campos-autoeval"
-          data-prototype='<%= j(
-            fields_for("componente[campos_attributes][NEW_RECORD]", Campo.new) do |cf|
-              render("campo_fields", cf: cf, idx: "NEW_RECORD", tipos_campo: @tipos_campo, autoeval: true)
-            end
-          ) %>'>
-
-        <% (@componente.campos_autoeval || []).each do |campo| %>
-          <%= fields_for "componente[campos_attributes][#{campo.id}]", campo do |cf| %>
-            <%= render "campo_fields", cf: cf, idx: campo.id, tipos_campo: @tipos_campo, autoeval: true %>
-          <% end %>
+    <div id="campos-autoeval">
+      <template class="campo-template">
+        <%= fields_for "componente[campos_attributes][NEW_RECORD]", Campo.new do |cf| %>
+          <%= render "campo_fields", cf: cf, idx: "NEW_RECORD", tipos_campo: @tipos_campo, autoeval: true %>
         <% end %>
+      </template>
 
+      <% (@componente.campos_autoeval || []).each do |campo| %>
+        <%= fields_for "componente[campos_attributes][#{campo.id}]", campo do |cf| %>
+          <%= render "campo_fields", cf: cf, idx: campo.id, tipos_campo: @tipos_campo, autoeval: true %>
+        <% end %>
+      <% end %>
     </div>
 
     <div class="buttonera-1-c">

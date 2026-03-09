@@ -107,6 +107,8 @@ class SiacClienteController < ApplicationController
       nombre: erow['nombre']
     )
 
+    @tipos_especialidad = Siac::DocentesRepository.tipos_especialidad_catalogo
+
     # ============================================================
     # 1) COMPONENTES de la convocatoria (SIAC)
     # ============================================================

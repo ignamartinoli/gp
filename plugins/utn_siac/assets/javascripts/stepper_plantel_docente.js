@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <li><strong>Legajo:</strong> ${val(modal, 'docente[legajo]') || '-'}</li>
         <li><strong>Nombre:</strong> ${(val(modal, 'docente[apellido]') + ' ' + val(modal, 'docente[nombre]')).trim() || '-'}</li>
         <li><strong>Fecha nacimiento:</strong> ${val(modal, 'docente[fecha_nacimiento]') || '-'}</li>
-        <li><strong>Titulación:</strong> ${selectedText(modal, 'docente[titulacion]') || '-'}</li>
+        <li><strong>Titulación:</strong> ${selectedText(modal, 'docente[id_especialidad]') || '-'}</li>
         <li><strong>CV adjunto:</strong> ${filePresent(modal, 'docente[cv]') ? 'Sí' : 'No'}</li>
       </ul>
     `);
@@ -202,20 +202,37 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Validación mínima por step (para fase 1)
   function validateStep(modal, stepIndex) {
-    // En fase 1 vamos “a lo mínimo viable” para no frenarte:
-    // Usamos data-required si lo pusiste en inputs.
     const contents = modal.querySelectorAll('.step-content');
     const stepEl = contents[stepIndex];
     if (!stepEl) return true;
 
+    // 1) Validación normal de obligatorios no laborales
     const requiredEls = stepEl.querySelectorAll('[data-required="true"], [data-required="1"]');
     for (const el of requiredEls) {
+      if (el.dataset.laboral === "true") continue;
+
       if (el.type === 'file') {
         if (!el.files || el.files.length === 0) return false;
       } else if (!String(el.value || '').trim()) {
         return false;
       }
     }
+
+    // 2) Validación condicional del bloque laboral
+    const laborales = Array.from(stepEl.querySelectorAll('[data-laboral="true"]'));
+    if (laborales.length > 0) {
+      const hayAlgoLaboral = laborales.some(el => String(el.value || '').trim() !== '');
+
+      if (hayAlgoLaboral) {
+        const requeridosLaborales = stepEl.querySelectorAll('[data-laboral-required="true"]');
+        for (const el of requeridosLaborales) {
+          if (!String(el.value || '').trim()) {
+            return false;
+          }
+        }
+      }
+    }
+
     return true;
   }
 
@@ -255,6 +272,7 @@ document.addEventListener('DOMContentLoaded', function () {
         apellido: must(modal, '[name="docente[apellido]"]').value.trim(),
         legajo: val(modal, 'docente[legajo]') ? Number(val(modal, 'docente[legajo]')) : null,
         fecha_nacimiento: must(modal, '[name="docente[fecha_nacimiento]"]').value || null,
+        tipo_especialidad: safeInt(must(modal, '[name="docente[tipo_especialidad]"]').value),
         id_especialidad: idEspecialidad
       },
       cargo: {
@@ -504,8 +522,121 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  function mostrarCvExistente(modal, cv) {
+    const el = modal.querySelector('[data-target="cv_existente"]');
+    if (!el) return;
 
+    if (!cv) {
+      el.innerHTML = '<span class="text-muted">Sin CV cargado</span>';
+      return;
+    }
 
+    el.innerHTML = `
+      <span>CV actual: <strong>${cv.filename}</strong></span>
+      ${cv.url ? ` - <a href="${cv.url}" target="_blank" rel="noopener">Ver</a>` : ''}
+    `;
+  }
+
+  function autocompletarDocenteBasico(modal, docente) {
+    const set = (selector, value) => {
+      const el = modal.querySelector(selector);
+      if (!el || value === undefined || value === null) return;
+      el.value = String(value);
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+
+    set('input[name="docente[cuit]"], input[name="docente[cuil]"]', docente.cuil);
+    set('input[name="docente[nombre]"]', docente.nombre);
+    set('input[name="docente[apellido]"]', docente.apellido);
+    set('input[name="docente[fecha_nacimiento]"]', docente.fecha_nacimiento);
+    set('input[name="docente[legajo]"]', docente.legajo);
+
+    // titulacion = tipo_especialidad
+    set('select[name="docente[tipo_especialidad]"]', docente.tipo_especialidad);
+  }
+
+  ///BUSCAR POR CUIT
+  document.addEventListener("click", async function (e) {
+    const btn = e.target.closest('[data-action="buscar-docente"]');
+    if (!btn) return;
+
+    const modal = btn.closest('[id^="modal_docente_"]');
+    if (!modal) return;
+
+    const cuitInput = modal.querySelector('input[name="docente[cuit]"], input[name="docente[cuil]"]');
+    if (!cuitInput) return;
+
+    const cuil = (cuitInput.value || "").trim();
+    const mensaje = modal.querySelector('[id^="docente-no-encontrado-"]');
+    const btnGuardar = modal.querySelector(".step-btn.next");
+    const state = getModalState(modal);
+    const codigoMateria = state?.materiaActiva?.codigo || "";
+
+    if (btnGuardar) btnGuardar.disabled = false;
+
+    if (mensaje) {
+      mensaje.style.display = "none";
+      mensaje.textContent = "";
+      mensaje.classList.remove("alert-warning", "alert-danger", "alert-success");
+    }
+
+    if (!/^\d{11}$/.test(cuil)) {
+      if (mensaje) {
+        mensaje.textContent = "Ingrese un CUIT/CUIL válido";
+        mensaje.classList.add("alert-danger");
+        mensaje.style.display = "block";
+      }
+      return;
+    }
+
+    try {
+      const resp = await fetch(
+        `/docentes/por_cuit?cuil=${encodeURIComponent(cuil)}&codigo_materia=${encodeURIComponent(codigoMateria)}`,
+        { headers: { "Accept": "application/json", "X-Requested-With": "XMLHttpRequest" } }
+      );
+
+      const data = await resp.json();
+      console.log("RESP por_cuit:", data);
+
+      if (!resp.ok || data.ok === false) {
+        throw new Error(data.error || `HTTP ${resp.status}`);
+      }
+
+      if (!data.found) {
+        if (mensaje) {
+          mensaje.textContent = "Docente no encontrado. Puede cargarlo manualmente.";
+          mensaje.classList.add("alert-warning");
+          mensaje.style.display = "block";
+        }
+        return;
+      }
+
+      autocompletarDocenteBasico(modal, data.docente);
+      mostrarCvExistente(modal, data.cv);
+
+      if (mensaje) {
+        mensaje.textContent = "Docente encontrado";
+        mensaje.classList.add("alert-success");
+        mensaje.style.display = "block";
+      }
+
+      if (data.ya_en_materia) {
+        if (mensaje) {
+          mensaje.textContent = "Este docente ya está cargado en esta materia.";
+          mensaje.classList.remove("alert-success");
+          mensaje.classList.add("alert-danger");
+        }
+        if (btnGuardar) btnGuardar.disabled = true;
+      }
+    } catch (err) {
+      console.error(err);
+      if (mensaje) {
+        mensaje.textContent = err.message || "Error al buscar docente";
+        mensaje.classList.add("alert-danger");
+        mensaje.style.display = "block";
+      }
+    }
+  });
   // correr al cargar la página
   hydrateDocentesPorMateria();
 });

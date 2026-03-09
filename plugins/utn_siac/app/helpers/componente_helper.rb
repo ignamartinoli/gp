@@ -369,26 +369,20 @@ module ComponenteHelper
         # 🔹 Titulación
         content_tag(:div, class: 'mb-3') do
           label_tag(
-            'docente_titulacion',
+            'docente_id_especialidad',
             'Titulación',
             class: 'form-label fw-bold'
           ) +
           select_tag(
-            'docente[titulacion]',
-            options_for_select([
-              ['Seleccione titulación', ''],
-              ['Ingeniero/a', 'ingeniero'],
-              ['Licenciado/a', 'licenciado'],
-              ['Doctor/a', 'doctor'],
-              ['Maestro/a', 'maestro'],
-              ['Técnico/a', 'tecnico'],
-              ['Otro', 'otro']
-            ]),
-            id: 'docente_titulacion',
+            'docente[tipo_especialidad]',
+            options_for_select(
+              [['Seleccione titulación', '']] + Array(@tipos_especialidad).map { |t| [t['nombre'], t['id']] }
+            ),
+            id: 'docente_tipo_especialidad',
             class: 'form-select',
             data: {
               step: 'datos_personales',
-              path: 'docente.titulacion',
+              path: 'docente.tipo_especialidad',
               required: true
             }
           )
@@ -401,6 +395,7 @@ module ComponenteHelper
             'Adjunte CV actualizado (solo PDF)',
             class: 'form-label fw-bold'
           ) +
+          content_tag(:div, '', class: 'mb-2 text-muted', data: { target: 'cv_existente' }) +
           file_field_tag(
             'docente[cv]',
             id: 'docente_cv',
@@ -597,7 +592,8 @@ module ComponenteHelper
           nil,
           class: 'form-control empresa-cuit',
           placeholder: 'CUIT de la empresa',
-          inputmode: 'numeric'
+          inputmode: 'numeric',  
+          data: { laboral: true }
         ) +
 
         button_tag(
@@ -631,7 +627,7 @@ module ComponenteHelper
           min: 1,
           class: 'form-control',
           placeholder: 'Horas semanales (obligatorio)',
-          data: { required: true }
+          data: { laboral: true, laboral_required: true }
         )
       end +
 

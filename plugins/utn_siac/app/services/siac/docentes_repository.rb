@@ -118,10 +118,10 @@ module Siac
       ])
     end
 
-    def cargo_activo_existente?(cuil, codigo_materia, id_facultad)
+    def self.cargo_activo_existente?(cuil:, codigo_materia:, id_facultad:)
       sql = ActiveRecord::Base.send(
         :sanitize_sql_array,
-        [<<~SQL, cuil, codigo_materia, id_facultad]
+        [<<~SQL, cuil.to_i, codigo_materia.to_s, id_facultad.to_i]
           SELECT 1
           FROM public."SIAC_CargosXDocentes"
           WHERE cuil_docente = ?
@@ -132,7 +132,7 @@ module Siac
         SQL
       )
 
-      ActiveRecord::Base.connection.select_value(sql).present?
+      Siac::SiacRepository.connection.select_value(sql).present?
     end
 
     # Helper opcional: extraer p_resultado de insertar_docente_result
@@ -147,6 +147,19 @@ module Siac
       SiacRepository.select_value(sql, legajo).present?
     end
 
+    def self.docente_existe?(cuil:)
+      sql = ActiveRecord::Base.send(
+        :sanitize_sql_array,
+        [<<~SQL, cuil.to_i]
+          SELECT 1
+          FROM public."SIAC_Docentes"
+          WHERE cuil = ?
+          LIMIT 1
+        SQL
+      )
+
+      Siac::SiacRepository.connection.select_value(sql).present?
+    end
 
     # =========================
     # CATÁLOGOS – DOCENTES
@@ -207,17 +220,95 @@ module Siac
       ).to_a
     end
 
-    def self.docente_basico_por_cuit(cuil:)
-      sql = <<~SQL
-        SELECT cuil, nombre, apellido, fecha_nacimiento
-        FROM public."SIAC_Personas"
-        WHERE cuil = $1
-        LIMIT 1
+    def self.tipo_especialidad_por_id(id_especialidad)
+      return nil if id_especialidad.blank?
+
+      sql = ActiveRecord::Base.send(
+        :sanitize_sql_array,
+        [<<~SQL, id_especialidad.to_i]
+          SELECT tipo_especialidad
+          FROM public."SPYP_Especialidades"
+          WHERE id_especialidad = ?
+          LIMIT 1
+        SQL
+      )
+
+      Siac::SiacRepository.connection.exec_query(sql).to_a.first&.[]("tipo_especialidad")
+    end
+
+    def self.tipos_especialidad_catalogo
+      rows = Siac::SiacRepository.connection.exec_query(<<~SQL).to_a
+        SELECT DISTINCT tipo_especialidad
+        FROM public.siac_obtener_tipos_especialidad
+        WHERE activa = B'1'
+        ORDER BY tipo_especialidad
       SQL
 
-      Siac::SiacRepository.connection.exec_query(
-        Siac::SiacRepository.send(:sanitize_sql_array, [sql, cuil.to_i])
-      ).to_a.first
+      rows.map do |r|
+        id = r["tipo_especialidad"].to_i
+        {
+          "id" => id,
+          "nombre" => nombre_tipo_especialidad(id)
+        }
+      end
+    end
+
+    def self.nombre_tipo_especialidad(id)
+      case id.to_i
+      when 1  then "Ingeniero/a"
+      when 3  then "Doctor/a"
+      when 5  then "Técnico/a"
+      when 6  then "Especialista"
+      when 7  then "Profesor/a"
+      when 8  then "Licenciado/a"
+      when 9  then "Magíster"
+      when 11 then "Arquitecto/a"
+      when 12 then "Contador/a"
+      when 13 then "Abogado/a"
+      when 20 then "Posgrado"
+      when 50 then "Otro"
+      else "Tipo #{id}"
+      end
+    end
+
+    def self.docente_basico_por_cuit(cuil:)
+      sql = ActiveRecord::Base.send(
+        :sanitize_sql_array,
+        [<<~SQL, cuil.to_i]
+          SELECT
+            p.cuil,
+            p.nombre,
+            p.apellido,
+            p.fecha_nacimiento,
+            p.id_cv_adjunto,
+            d.legajo_docente AS legajo,
+            d.id_especialidad,
+            d.tipo_especialidad_recibido
+          FROM public."SIAC_Personas" p
+          LEFT JOIN public."SIAC_Docentes" d ON d.cuil = p.cuil
+          WHERE p.cuil = ?
+          LIMIT 1
+        SQL
+      )
+
+      Siac::SiacRepository.connection.exec_query(sql).to_a.first
+    end
+
+    def self.cv_por_attachment_id(id_cv)
+      Rails.logger.warn("CV DEBUG buscando attachment id=#{id_cv.inspect}")
+      return nil if id_cv.blank?
+
+      attachment = Attachment.find_by(id: id_cv)
+      Rails.logger.warn("CV DEBUG attachment encontrado=#{attachment.inspect}")
+
+      return nil unless attachment
+
+      {
+        id: attachment.id,
+        filename: attachment.filename,
+        filesize: attachment.filesize,
+        content_type: attachment.content_type
+      }
     end
 
   end

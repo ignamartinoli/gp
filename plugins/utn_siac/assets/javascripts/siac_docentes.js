@@ -27,66 +27,6 @@ function guardarDocente(payload) {
   });
 }
 
-///BUSCAR POR CUIT
-document.addEventListener("click", function (e) {
-  const btn = e.target.closest('[data-action="buscar-docente"]');
-  if (!btn) return;
-
-  const modal = btn.closest('[id^="modal_docente_"]');
-  if (!modal) return;
-
-  const cuitInput = modal.querySelector('input[name="docente[cuit]"]');
-  if (!cuitInput) return;
-
-  const cuit = (cuitInput.value || "").trim();
-  console.log("CLICK buscar-docente, cuit=", cuit);
-
-  fetch('/siac_docentes/buscar_por_cuit?cuit=' + encodeURIComponent(cuit), {
-    headers: { 'Accept': 'application/json' }
-  })
-    .then(r => r.json())
-    .then(data => {
-      console.log("RESP buscar_por_cuit:", data);
-
-      const mensaje = modal.querySelector('[id^="docente-no-encontrado-"]');
-      if (!mensaje) return;
-
-      // Reset clases
-      mensaje.classList.remove("alert-warning", "alert-danger", "alert-success");
-
-      if (!cuit) {
-        mensaje.textContent = "Ingrese un CUIT válido";
-        mensaje.classList.add("alert-danger");
-        mensaje.style.display = "block";
-        return;
-      }
-
-      if (data.found) {
-        mensaje.textContent = "Docente encontrado";
-        mensaje.classList.add("alert-success");
-        mensaje.style.display = "block";
-
-        // 🔥 cargar datos recuperados
-        autocompletarDocente(modal, data);
-
-        // 🔴 si ya está en esta materia
-        if (data.ya_en_materia) {
-          mensaje.textContent = "Este docente ya está cargado en esta materia.";
-          mensaje.classList.remove("alert-success");
-          mensaje.classList.add("alert-danger");
-
-          const btnGuardar = modal.querySelector(".step-btn.next");
-          if (btnGuardar) btnGuardar.disabled = true;
-        }
-      } else {
-        mensaje.textContent = "Docente no encontrado. Puede cargarlo manualmente.";
-        mensaje.classList.add("alert-warning");
-        mensaje.style.display = "block";
-      }
-    })
-    .catch(err => console.error(err));
-});
-
 function autocompletarDocente(modal, data) {
   const d = data.docente || {};
   const empleo = data.empleo || null;
@@ -94,9 +34,9 @@ function autocompletarDocente(modal, data) {
 
   const set = (selector, value) => {
     const el = modal.querySelector(selector);
-    if (el && value !== undefined && value !== null) {
-      el.value = value;
-    }
+    if (!el || value === undefined || value === null) return;
+    el.value = value;
+    el.dispatchEvent(new Event("change", { bubbles: true }));
   };
 
   // =========================
