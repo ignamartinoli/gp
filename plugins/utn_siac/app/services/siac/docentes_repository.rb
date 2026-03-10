@@ -197,6 +197,18 @@ module Siac
       )
     end
 
+    def self.actualizar_cv_docente(cuil:, id_cv_adjunto:)
+      sql = ActiveRecord::Base.send(
+        :sanitize_sql_array,
+        [<<~SQL, id_cv_adjunto.to_i, cuil.to_i]
+          UPDATE public."SIAC_Personas"
+          SET id_cv_adjunto = ?
+          WHERE cuil = ?
+        SQL
+      )
+
+      Siac::SiacRepository.connection.execute(sql)
+    end
 
     def self.docentes_por_materia(codigo_materia:, id_facultad:)
       sql = <<~SQL

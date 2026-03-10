@@ -160,7 +160,12 @@ class DocentesController < ApplicationController
       return render json: { ok: false, error: 'Debe adjuntar el CV en PDF' }, status: 422
     end
 
-    unless Siac::DocentesRepository.docente_existe?(cuil: docente[:cuil])
+    if Siac::DocentesRepository.docente_existe?(cuil: docente[:cuil])
+      Siac::DocentesRepository.actualizar_cv_docente(
+        cuil: docente[:cuil],
+        id_cv_adjunto: docente[:id_cv]
+      )
+    else
       rows = Siac::DocentesRepository.insertar_docente_result(**docente)
       p_resultado = rows.first&.[]('p_resultado') || rows.first&.values&.first
 
@@ -230,6 +235,7 @@ class DocentesController < ApplicationController
     )
   end
 
+  
 
   private
 
