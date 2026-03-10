@@ -524,12 +524,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function mostrarCvExistente(modal, cv) {
     const el = modal.querySelector('[data-target="cv_existente"]');
+    const cvInput = modal.querySelector('#docente_cv');
+    const hiddenIdCv = modal.querySelector('#docente_id_cv');
+
     if (!el) return;
 
     if (!cv) {
+      modal.dataset.cvExistenteId = '';
+      modal.dataset.cvExistenteFilename = '';
+
+      if (hiddenIdCv) hiddenIdCv.value = '';
+      if (cvInput) cvInput.dataset.required = 'true';
+
       el.innerHTML = '<span class="text-muted">Sin CV cargado</span>';
       return;
     }
+
+    modal.dataset.cvExistenteId = cv.id || '';
+    modal.dataset.cvExistenteFilename = cv.filename || '';
+
+    if (hiddenIdCv) hiddenIdCv.value = cv.id || '';
+    if (cvInput) cvInput.dataset.required = 'false';
 
     el.innerHTML = `
       <span>CV actual: <strong>${cv.filename}</strong></span>
@@ -550,9 +565,9 @@ document.addEventListener('DOMContentLoaded', function () {
     set('input[name="docente[apellido]"]', docente.apellido);
     set('input[name="docente[fecha_nacimiento]"]', docente.fecha_nacimiento);
     set('input[name="docente[legajo]"]', docente.legajo);
-
-    // titulacion = tipo_especialidad
     set('select[name="docente[tipo_especialidad]"]', docente.tipo_especialidad);
+    set('select[name="docente[id_especialidad]"]', docente.id_especialidad);
+    set('input[name="docente[id_cv]"]', docente.id_cv);
   }
 
   ///BUSCAR POR CUIT
@@ -603,6 +618,8 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       if (!data.found) {
+        mostrarCvExistente(modal, null);
+
         if (mensaje) {
           mensaje.textContent = "Docente no encontrado. Puede cargarlo manualmente.";
           mensaje.classList.add("alert-warning");
@@ -637,6 +654,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
   });
+  
   // correr al cargar la página
   hydrateDocentesPorMateria();
 });

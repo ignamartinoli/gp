@@ -36,6 +36,7 @@ get  'docentes/catalogos', to: 'docentes#catalogos'
 post 'docentes/guardar',   to: 'docentes#guardar'
 get  'docentes/por_materia', to: 'docentes#por_materia'
 get  'docentes/por_cuit',    to: 'docentes#por_cuit'
+get 'docentes/ver_cv', to: 'docentes#ver_cv'
 
 get 'siac/cargos_docentes', to: 'siac#cargos_docentes'
 

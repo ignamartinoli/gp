@@ -17,7 +17,8 @@ module Siac
         'docentes' => %w[
           buscar datos catalogos guardar
           por_materia por_cuit
-        ],
+          ver_cv
+        ], 
         'account' => %w[logout login]
       }
 

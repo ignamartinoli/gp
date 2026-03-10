@@ -74,7 +74,19 @@ class DocentesController < ApplicationController
     end
 
     Rails.logger.warn("CV DEBUG id_cv_adjunto=#{persona['id_cv_adjunto'].inspect}")
-    cv = Siac::DocentesRepository.cv_por_attachment_id(persona['id_cv_adjunto'])
+
+    cv = nil
+    if persona['id_cv_adjunto'].present?
+      attachment = Attachment.find_by(id: persona['id_cv_adjunto'])
+
+      if attachment.present?
+        cv = {
+          id: attachment.id,
+          filename: attachment.filename,
+          url: "/docentes/ver_cv?id=#{attachment.id}&cuil=#{CGI.escape(cuil)}"
+        }
+      end
+    end
 
     render json: {
       ok: true,
@@ -86,11 +98,17 @@ class DocentesController < ApplicationController
         fecha_nacimiento: persona['fecha_nacimiento'],
         legajo: persona['legajo'],
         id_especialidad: persona['id_especialidad'],
-        tipo_especialidad: persona['tipo_especialidad_recibido']
+        tipo_especialidad: persona['tipo_especialidad_recibido'],
+        id_cv: persona['id_cv_adjunto']
       },
       cv: cv,
       ya_en_materia: ya_en_materia
     }
+  rescue => e
+    Rails.logger.error "[por_cuit] #{e.class}: #{e.message}"
+    Rails.logger.error e.backtrace.first(10).join("\n")
+
+    render json: { ok: false, error: e.message }, status: 422
   end
 
   # =========================
@@ -187,6 +205,31 @@ class DocentesController < ApplicationController
       'SELECT * FROM SIAC_OBTENER_CARGOS_DOCENTES'
       )
   end
+
+  def ver_cv
+    cliente = SiacCliente.find_by(user_id: User.current.id, activo: true)
+    return render json: { ok: false, error: 'No autorizado' }, status: 403 unless cliente
+
+    cuil = params[:cuil].to_s.strip
+    attachment_id = params[:id].to_i
+
+    persona = Siac::DocentesRepository.docente_basico_por_cuit(cuil: cuil)
+    return render json: { ok: false, error: 'Docente no encontrado' }, status: 404 unless persona
+
+    id_cv_adjunto = persona['id_cv_adjunto'].to_i
+    return render json: { ok: false, error: 'No autorizado' }, status: 403 unless id_cv_adjunto == attachment_id
+
+    attachment = Attachment.find_by(id: attachment_id)
+    return render json: { ok: false, error: 'CV no encontrado' }, status: 404 unless attachment
+
+    send_file(
+      attachment.diskfile,
+      filename: attachment.filename,
+      type: attachment.content_type || 'application/pdf',
+      disposition: 'inline'
+    )
+  end
+
 
   private
 

@@ -356,3 +356,11 @@ async function hidratarPlantelDesdeDB() {
     }
   }
 }
+
+function docenteTieneCvResuelto(modal) {
+  const input = modal.querySelector('#docente_cv');
+  const nuevoArchivo = input?.files?.[0];
+  const cvExistenteId = modal.querySelector('#docente_id_cv')?.value || modal.dataset.cvExistenteId;
+
+  return !!nuevoArchivo || !!cvExistenteId;
+}
