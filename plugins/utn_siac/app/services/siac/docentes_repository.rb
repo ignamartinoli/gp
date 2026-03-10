@@ -238,36 +238,38 @@ module Siac
 
     def self.tipos_especialidad_catalogo
       rows = Siac::SiacRepository.connection.exec_query(<<~SQL).to_a
-        SELECT DISTINCT tipo_especialidad
+        SELECT id_tipo_especialidad, nombre, nivel
         FROM public.siac_obtener_tipos_especialidad
-        WHERE activa = B'1'
-        ORDER BY tipo_especialidad
+        ORDER BY nombre
       SQL
 
       rows.map do |r|
-        id = r["tipo_especialidad"].to_i
+        id = r["id_tipo_especialidad"].to_i
         {
           "id" => id,
           "nombre" => nombre_tipo_especialidad(id)
         }
-      end
+      end.uniq { |r| r["nombre"] }
     end
-
+    
     def self.nombre_tipo_especialidad(id)
       case id.to_i
-      when 1  then "Ingeniero/a"
-      when 3  then "Doctor/a"
-      when 5  then "Técnico/a"
-      when 6  then "Especialista"
-      when 7  then "Profesor/a"
-      when 8  then "Licenciado/a"
-      when 9  then "Magíster"
-      when 11 then "Arquitecto/a"
-      when 12 then "Contador/a"
-      when 13 then "Abogado/a"
-      when 20 then "Posgrado"
-      when 50 then "Otro"
-      else "Tipo #{id}"
+      when 1, 2, 12
+        "Técnico/a"
+      when 3
+        "Ingeniero/a"
+      when 4, 7
+        "Especialista"
+      when 5
+        "Magíster"
+      when 6
+        "Doctor/a"
+      when 8
+        "Profesor/a"
+      when 11
+        "Licenciado/a"
+      else
+        "Otro"
       end
     end
 
