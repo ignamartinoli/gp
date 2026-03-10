@@ -120,6 +120,8 @@ class DocentesController < ApplicationController
   # GUARDAR DOCENTE + CARGO
   # =========================
   def guardar
+    Rails.logger.info '========== INICIO guardar =========='
+
     cliente = SiacCliente.find_by!(user_id: User.current.id, activo: true)
     id_facultad = cliente.regional_id
 
@@ -129,12 +131,26 @@ class DocentesController < ApplicationController
     return render json: { ok: false, error: 'Titulación requerida' }, status: 422 if docente[:tipo_especialidad].blank?
     return render json: { ok: false, error: 'Especialidad inválida' }, status: 422 if docente[:id_especialidad].blank?
 
+    archivo = params.dig(:docente, :cv)
+
+    if archivo.present?
+      resultado_cv = guardar_cv_redmine_desde_params!
+      docente[:id_cv] = resultado_cv[:attachment_id]
+    elsif docente[:id_cv].present?
+      docente[:id_cv] = docente[:id_cv]
+    else
+      return render json: { ok: false, error: 'Debe adjuntar el CV en PDF' }, status: 422
+    end
+
     unless Siac::DocentesRepository.docente_existe?(cuil: docente[:cuil])
       rows = Siac::DocentesRepository.insertar_docente_result(**docente)
       p_resultado = rows.first&.[]('p_resultado') || rows.first&.values&.first
 
       if p_resultado.present? && p_resultado.to_i != 1
-        return render json: { ok: false, error: "SIAC_INSERTAR_DOCENTE rechazó (p_resultado=#{p_resultado})" }, status: 422
+        return render json: {
+          ok: false,
+          error: "SIAC_INSERTAR_DOCENTE rechazó (p_resultado=#{p_resultado})"
+        }, status: 422
       end
     end
 
@@ -150,7 +166,16 @@ class DocentesController < ApplicationController
       fecha_baja: cargo[:fecha_baja]
     )
 
-    render json: { ok: true }
+    render json: {
+      ok: true,
+      id_cv: docente[:id_cv]
+    }
+
+  rescue => e
+    Rails.logger.error "[guardar] #{e.class}: #{e.message}"
+    Rails.logger.error e.backtrace.first(10).join("\n")
+
+    render json: { ok: false, error: e.message }, status: 422
   end
 
 
@@ -165,6 +190,34 @@ class DocentesController < ApplicationController
 
   private
 
+  def guardar_cv_redmine_desde_params!
+    archivo = params.dig(:docente, :cv)
+
+    raise 'Debe adjuntar el CV en PDF' if archivo.blank?
+    raise 'El CV debe ser un archivo PDF' unless archivo.content_type == 'application/pdf'
+
+    attachment = Attachment.new(
+      file: archivo,
+      author: User.current,
+      filename: archivo.original_filename,
+      content_type: 'application/pdf',
+      description: 'CV docente'
+    )
+
+    unless attachment.save
+      errores = attachment.errors.full_messages.to_sentence.presence || 'No se pudo guardar el CV en Redmine'
+      raise errores
+    end
+
+    {
+      attachment_id: attachment.id,
+      filename: attachment.filename,
+      disk_filename: attachment.disk_filename,
+      filesize: attachment.filesize,
+      content_type: attachment.content_type
+    }
+  end
+
   def docente_params
     params.require(:docente).permit(
       :cuil,
@@ -174,8 +227,10 @@ class DocentesController < ApplicationController
       :fecha_nacimiento,
       :tipo_especialidad,
       :id_facultad,
-      :id_especialidad
-    ).to_h.symbolize_keys
+      :id_especialidad,
+      :id_cv,
+      :cv
+    )
   end
 
   def cargo_params

@@ -2,17 +2,36 @@
 // GUARDAR DOCENTE
 // =========================
 function guardarDocente(payload) {
+  const cvInput = document.getElementById('docente_cv');
+  const cvFile = cvInput?.files?.[0] || null;
+
+  const formData = new FormData();
+
+  Object.entries(payload?.docente || {}).forEach(([key, value]) => {
+    formData.append(`docente[${key}]`, value ?? '');
+  });
+
+  Object.entries(payload?.cargo || {}).forEach(([key, value]) => {
+    formData.append(`cargo[${key}]`, value ?? '');
+  });
+
+  Object.entries(payload?.empresa || {}).forEach(([key, value]) => {
+    formData.append(`empresa[${key}]`, value ?? '');
+  });
+
+  if (cvFile) {
+    formData.append('docente[cv]', cvFile);
+  }
+
   return fetch('/docentes/guardar', {
     method: 'POST',
-    redirect: 'manual', // <- clave: no seguir 302 silenciosamente
+    redirect: 'manual',
     headers: {
-      'Content-Type': 'application/json',
       'Accept': 'application/json',
       'X-CSRF-Token': document.querySelector('meta[name=csrf-token]').content
     },
-    body: JSON.stringify(payload)
+    body: formData
   }).then(async (r) => {
-    // Si hubo redirect, el browser puede devolver opaqueredirect en algunos casos
     if (r.type === 'opaqueredirect' || (r.status >= 300 && r.status < 400)) {
       throw new Error('La sesión/permisos redirigieron la petición (302).');
     }
@@ -316,7 +335,7 @@ function actualizarResumen(modal) {
 
 async function cargarDocentesMateria(codigoMateria) {
   const resp = await fetch(`/docentes/por_materia?codigo_materia=${encodeURIComponent(codigoMateria)}`, {
-    headers: { "Accept": "application/json", "X-Requested-With": "XMLHttpRequest" }
+    headers: { "Accept": "", "X-Requested-With": "XMLHttpRequest" }
   });
   const data = await resp.json();
   if (!resp.ok || data.ok === false) throw new Error(data.error || `HTTP ${resp.status}`);

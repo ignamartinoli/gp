@@ -12,6 +12,7 @@
 /coverage
 /files/*
 /public/files/*
+/public/files-test/*
 /lib/redmine/scm/adapters/mercurial/redminehelper.pyc
 /lib/redmine/scm/adapters/mercurial/redminehelper.pyo
 /log/*.log*

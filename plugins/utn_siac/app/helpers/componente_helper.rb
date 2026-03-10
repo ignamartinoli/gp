@@ -395,7 +395,23 @@ module ComponenteHelper
             'Adjunte CV actualizado (solo PDF)',
             class: 'form-label fw-bold'
           ) +
-          content_tag(:div, '', class: 'mb-2 text-muted', data: { target: 'cv_existente' }) +
+
+          # CV existente
+          content_tag(
+            :div,
+            '',
+            class: 'mb-2 text-muted',
+            data: { target: 'cv_existente' }
+          ) +
+
+          # hidden para conservar id_cv existente
+          hidden_field_tag(
+            'docente[id_cv]',
+            nil,
+            id: 'docente_id_cv'
+          ) +
+
+          # input para subir nuevo CV
           file_field_tag(
             'docente[cv]',
             id: 'docente_cv',
