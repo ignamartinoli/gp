@@ -72,6 +72,11 @@
 
     <div class="div_section">
       <h3 class="siac_title">Administración de convocatorias</h3>
+      <% if @regional.present? %>
+        <h4 class="siac_subtitle" style="margin-top: -10px; margin-bottom: 20px; color: #555;">
+          Facultad Regional: <%= @regional.nombre %>
+        </h4>
+      <% end %>
       <h2>Dimensiones asociadas</h2>
 
       <% if @dimensiones.present? %>

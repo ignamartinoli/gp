@@ -61,6 +61,7 @@ module ComponenteHelper
 
   # Campo de texto
   def render_text_field(campo)
+    is_readonly = (@modo == :solo_lectura)
     content_tag(:div, class: 'campo-texto') do
       text_area_tag(
         "campo_#{campo.id}",
@@ -68,6 +69,8 @@ module ComponenteHelper
         class: 'tipo-campo-texto form-control',
         maxlength: 2000,
         rows: 3,
+        readonly: is_readonly,
+        disabled: is_readonly,
         placeholder: 'Escribí tu respuesta...'
       )
     end
@@ -76,11 +79,12 @@ module ComponenteHelper
   # Selección múltiple → Checkboxes
   def render_multiple_select(campo)
     opciones = normalize_opciones(campo)
+    is_readonly = (@modo == :solo_lectura)
 
     content_tag(:div, class: 'tipo-campo-multiple') do
       opciones.map do |opt|
         content_tag(:label, class: 'tipo-campo-multiple-op form-check-label d-block') do
-          check_box_tag("campo_#{campo.id}[]", opt[:value], false, class: 'form-check-input me-2') +
+          check_box_tag("campo_#{campo.id}[]", opt[:value], false, class: 'form-check-input me-2', disabled: is_readonly) +
             opt[:label].to_s
         end
       end.join.html_safe
@@ -90,32 +94,38 @@ module ComponenteHelper
   # Selección única → Lista desplegable
   def render_single_select(campo)
     opciones = normalize_opciones(campo)
+    is_readonly = (@modo == :solo_lectura)
 
     content_tag(:div, class: 'tipo-campo-unica') do
       select_tag(
         "campo_#{campo.id}",
         options_for_select([['Seleccione una opción', '']]) +
           options_for_select(opciones.map { |o| [o[:label], o[:value]] }),
-        class: 'tipo-campo-select form-select'
+        class: 'tipo-campo-select form-select',
+        disabled: is_readonly
       )
     end
   end
 
   # Campo fecha
   def render_date_field(campo)
+    is_readonly = (@modo == :solo_lectura)
     content_tag(:div, class: 'campo-fecha') do
-      date_field_tag("campo_#{campo.id}", nil, class: 'form-control')
+      date_field_tag("campo_#{campo.id}", nil, class: 'form-control', readonly: is_readonly, disabled: is_readonly)
     end
   end
 
   # Campo número
   def render_number_field(campo)
+    is_readonly = (@modo == :solo_lectura)
     content_tag(:div, class: 'campo-numero') do
       number_field_tag(
         "campo_#{campo.id}",
         nil,
         class: 'form-control',
         step: 'any',
+        readonly: is_readonly,
+        disabled: is_readonly,
         placeholder: 'Ingrese un valor numérico'
       )
     end
@@ -123,6 +133,7 @@ module ComponenteHelper
 
   # Barra de progreso con descripción
   def render_progress_bar(campo)
+    is_readonly = (@modo == :solo_lectura)
     content_tag(:div, class: 'campo-progreso w-100') do
       fila_slider = content_tag(:div, class: 'slider-wrapper d-flex align-items-center w-100') do
         tag.input(
@@ -132,6 +143,7 @@ module ComponenteHelper
           value: 50,
           class: 'tipo-campo-barra form-range flex-grow-1',
           id: "slider_#{campo.id}",
+          disabled: is_readonly,
           oninput: "document.getElementById('valor_progreso_#{campo.id}').innerText = this.value + '%';"
         ) +
           content_tag(:div, "50%", class: 'tipo-campo-barra-label fw-bold ms-2', id: "valor_progreso_#{campo.id}")
@@ -144,6 +156,8 @@ module ComponenteHelper
           class: 'form-control tipo-campo-texto',
           rows: 2,
           maxlength: 500,
+          readonly: is_readonly,
+          disabled: is_readonly,
           placeholder: 'Descripción de la valoración...'
         )
       end
@@ -762,7 +776,8 @@ module ComponenteHelper
 
   # Fallback genérico
   def render_generic_field(campo)
-    text_field_tag("campo_#{campo.id}", nil, class: 'form-control', placeholder: 'Campo genérico')
+    is_readonly = (@modo == :solo_lectura)
+    text_field_tag("campo_#{campo.id}", nil, class: 'form-control', readonly: is_readonly, disabled: is_readonly, placeholder: 'Campo genérico')
   end
 
   ##############################################
@@ -796,7 +811,8 @@ module ComponenteHelper
   # Fallback genérico
   ##############################################
   def render_generic_field(campo)
-    text_field_tag("campo_#{campo.id}", nil, class: 'form-control', placeholder: 'Campo genérico')
+    is_readonly = (@modo == :solo_lectura)
+    text_field_tag("campo_#{campo.id}", nil, class: 'form-control', readonly: is_readonly, disabled: is_readonly, placeholder: 'Campo genérico')
   end
 
   ##############################################
@@ -817,9 +833,11 @@ module ComponenteHelper
     tipo = campo.try(:tipo_campo).try(:nombre).to_s.downcase
     return unless (tipo =~ /texto/)
 
+    is_readonly = (@modo == :solo_lectura)
+
     content_tag(:div, class: 'campo-adjunto mt-2') do
       label_tag("adjunto_#{campo.id}", "Adjuntar archivo:", class: 'form-label') +
-        file_field_tag("adjunto_#{campo.id}", class: 'campo-adjunto form-control-file')
+        file_field_tag("adjunto_#{campo.id}", class: 'campo-adjunto form-control-file', disabled: is_readonly)
     end
   end
 

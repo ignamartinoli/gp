@@ -16,6 +16,15 @@ get 'convocatorias/cargar_especialidades/:titulacion', to: 'convocatoria#cargar_
 post 'convocatorias/cargar_sedes', to: 'convocatoria#cargar_sedes', as: 'cargar_especialidades_sedes'
 post "convocatorias/pdf_preview", to: "convocatoria#pdf_preview"
 
+# Administrar Carga de Datos por Regional
+get 'convocatorias/:id/regional/:regional_id/cargar_datos', 
+    to: 'convocatoria_carga#edit_datos_regional', 
+    as: 'admin_cargar_datos_regional'
+    
+get 'convocatorias/:id/regional/:regional_id/ver_datos', 
+    to: 'convocatoria_carga#show_datos_regional', 
+    as: 'admin_ver_datos_regional'
+
 # Administrar Componentes
 get 'componentes', to: 'componente#index', as: 'componentes'
 get 'componentes/nueva', to: 'componente#new', as: 'new_componente'
@@ -42,5 +51,5 @@ get 'siac/cargos_docentes', to: 'siac#cargos_docentes'
 
 scope '/siac_cliente' do
   get 'buscar_empresa',       to: 'siac_cliente#buscar_empresa',       as: :siac_cliente_buscar_empresa
-  get 'buscar_empresa_nosis', to: 'siac_cliente#buscar_empresa_nosis', as: :siac_cliente_buscar_empresa_nosis
+#  get 'buscar_empresa_nosis', to: 'siac_cliente#buscar_empresa_nosis', as: :siac_cliente_buscar_empresa_nosis
 end
