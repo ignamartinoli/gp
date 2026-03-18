@@ -168,8 +168,20 @@
         <p>No hay dimensiones asociadas.</p>
       <% end %>
 
-      <div class="submit-container">
-        <%= link_to "Volver a las convocatorias", convocatorias_path, class: "siac_button" %>
+      <div class="bottom-action-bar">
+        <div class="bottom-action-bar__left">
+          <%= link_to "Volver a convocatoria", show_convocatoria_path(@convocatoria["id_convocatoria"]), class: "siac_button siac_button--secondary" %>
+        </div>
+
+        <div class="bottom-action-bar__right">
+          <button type="button" id="btn-validar-respuestas" class="siac_button siac_button--warning">
+            Validar
+          </button>
+
+          <button type="button" id="btn-guardar-respuestas" class="siac_button">
+            Guardar
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -475,6 +487,49 @@
   </style>
 
   <script>
+    function recolectarRespuestasTexto() {
+      const textareas = Array.from(
+        document.querySelectorAll('textarea.siac-persistible[data-tipo-campo="texto"]')
+      );
+
+      return textareas.map(function(textarea) {
+        return {
+          id_campo: parseInt(textarea.dataset.campoId, 10),
+          id_componente: parseInt(textarea.dataset.componenteId, 10),
+          respuesta_usuario: textarea.value || ""
+        };
+      });
+    }
+
+    function validarTextareas() {
+      const textareas = Array.from(
+        document.querySelectorAll('textarea.siac-persistible[data-tipo-campo="texto"]')
+      );
+
+      const advertencias = [];
+
+      textareas.forEach(function(textarea) {
+        const esRequerido = String(textarea.dataset.required) === "true";
+        const valor = (textarea.value || "").trim();
+
+        textarea.classList.remove("campo-con-error");
+
+        if (esRequerido && !valor) {
+          advertencias.push({
+            id_campo: textarea.dataset.campoId,
+            id_componente: textarea.dataset.componenteId,
+            mensaje: "Campo obligatorio sin completar"
+          });
+
+          textarea.classList.add("campo-con-error");
+        }
+      });
+
+      return advertencias;
+    }
+  </script>
+
+  <script>
       document.addEventListener("DOMContentLoaded", function () {
           // --- Collapse sidebar ---
           var column = document.querySelector(".dimensiones-column");
@@ -643,6 +698,57 @@
   <script>
     document.addEventListener("DOMContentLoaded", function () {
 
+      // ... todo tu código actual ...
+
+      const btnValidar = document.getElementById("btn-validar-respuestas");
+      const btnGuardar = document.getElementById("btn-guardar-respuestas");
+
+      if (btnValidar) {
+        btnValidar.addEventListener("click", function () {
+          const advertencias = validarTextareas();
+
+          if (advertencias.length === 0) {
+            alert("Validación completada. No se detectaron advertencias.");
+          } else {
+            alert("Validación completada. Se detectaron " + advertencias.length + " advertencias.");
+            console.log(advertencias);
+          }
+        });
+      }
+
+      if (btnGuardar) {
+        btnGuardar.addEventListener("click", function () {
+          const respuestas = recolectarRespuestasTexto();
+
+          fetch("<%= guardar_respuestas_texto_convocatoria_path(@convocatoria['id_convocatoria'], @regional.id, @especialidad_id) %>", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({
+              respuestas: respuestas
+            })
+          })
+          .then(function(response) { return response.json(); })
+          .then(function(data) {
+            if (data.ok) {
+              alert("Respuestas guardadas correctamente.");
+            } else {
+              alert(data.error || "No se pudieron guardar las respuestas.");
+            }
+          })
+          .catch(function() {
+            alert("Ocurrió un error al guardar.");
+          });
+        });
+      }
+    });
+  </script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+
       // ===============================
       // MODAL DOCENTE (TU COMPONENTE)
       // ===============================
@@ -790,7 +896,10 @@
       // Initial update after short delay (to ensure DOM is ready)
       setTimeout(updateCompletionBar, 300);
 
-    });
+
+      });
+
+    
   </script>
 
 <% end %>

@@ -50,6 +50,8 @@ module ComponenteHelper
       render_progress_bar(campo)
     when /plantel docente/
       render_plantel_docente(campo)
+    when /acciones de mejora/
+      render_acciones_de_mejora()
     else
       render_generic_field(campo)
     end
@@ -61,14 +63,25 @@ module ComponenteHelper
 
   # Campo de texto
   def render_text_field(campo)
+    is_readonly = (@modo == :solo_lectura)
+    valor = valor_guardado_para(campo)
+
     content_tag(:div, class: 'campo-texto') do
       text_area_tag(
         "campo_#{campo.id}",
-        nil,
-        class: 'tipo-campo-texto form-control',
+        valor,
+        class: 'tipo-campo-texto form-control siac-persistible',
         maxlength: 2000,
         rows: 3,
-        placeholder: 'Escribí tu respuesta...'
+        readonly: is_readonly,
+        disabled: is_readonly,
+        placeholder: 'Escribí tu respuesta...',
+        data: {
+          campo_id: campo.id,
+          componente_id: campo.id_componente,
+          tipo_campo: 'texto',
+          required: campo.es_obligatorio ? 'true' : 'false'
+        }
       )
     end
   end
@@ -888,6 +901,18 @@ module ComponenteHelper
 
     { nivel: nivel, numero: numero }
   end
+
+
+  def respuesta_guardada_para(campo)
+    return nil unless @respuestas_guardadas.present?
+    @respuestas_guardadas[campo.id.to_i]
+  end
+
+  def valor_guardado_para(campo)
+    respuesta_guardada_para(campo)&.dig("respuesta_usuario")
+  end
+
+
 
   ##############################################
   # PDF helper (lo dejo como lo tenías)

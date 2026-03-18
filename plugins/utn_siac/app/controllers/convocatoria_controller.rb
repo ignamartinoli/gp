@@ -530,7 +530,6 @@ class ConvocatoriaController < ApplicationController
   def show
     id = params[:id].to_i
 
-    # 1) Traer convocatoria + estado (join)
     row = Siac::SiacRepository.query(
       Siac::SiacRepository.send(
         :sanitize_sql_array,
@@ -543,7 +542,8 @@ class ConvocatoriaController < ApplicationController
                 c.fecha_fin_convocatoria,
                 e.nombre_estado AS nombre_estado_actual
           FROM public."SIAC_Convocatorias" c
-          JOIN public."SIAC_EstadosConvocatorias" e ON e.id_estado = c.id_estado_actual
+          JOIN public."SIAC_EstadosConvocatorias" e
+            ON e.id_estado = c.id_estado_actual
           WHERE c.id_convocatoria = ?
           LIMIT 1
         }, id]
@@ -552,66 +552,77 @@ class ConvocatoriaController < ApplicationController
 
     return redirect_to(convocatorias_path, alert: "No existe la convocatoria") if row.blank?
 
-    # 2) Construir objeto para la vista (NO hash)
     @convocatoria = OpenStruct.new(
       id: row["id_convocatoria"],
       resolucion: row["numero_resolucion"],
       nombre: row["nombre_convocatoria"],
       titulaciones: row["id_tipo_especialidad"],
       fecha_inicio: parse_date(row["fecha_inicio_convocatoria"]),
-      fecha_hasta:  parse_date(row["fecha_fin_convocatoria"]),
+      fecha_hasta: parse_date(row["fecha_fin_convocatoria"]),
       etapa: (row["nombre_estado_actual"].presence || "Nueva"),
       estado: row["nombre_estado_actual"]
     )
 
-    # 3) Sedes (regionales + extensiones) para la tabla del show
-    #    La vista espera: sede.nombre y sede.regional&.nombre / sede.regional&.id
-    sedes_rows = Siac::SiacRepository.query(
+    filas_rows = Siac::SiacRepository.query(
       Siac::SiacRepository.send(
         :sanitize_sql_array,
         [%Q{
           SELECT
-            r.id_facultad   AS regional_id,
-            r.nombre        AS regional_nombre,
-            x.id_extension  AS extension_id,
-            x.nombre        AS extension_nombre
+            r.id_facultad        AS regional_id,
+            r.nombre             AS regional_nombre,
+            e.id_especialidad    AS especialidad_id,
+            e.nombre             AS especialidad_nombre,
+            x.id_extension       AS extension_id,
+            x.nombre             AS extension_nombre
           FROM public."SIAC_Convocatorias" c
-          LEFT JOIN public."SIAC_ConvocatoriasXRegionales"  cr ON cr.id_convocatoria = c.id_convocatoria
-          LEFT JOIN public."SPYP_Regionales"                r  ON r.id_facultad = cr.id_facultad
-          LEFT JOIN public."SIAC_ConvocatoriasXExtensiones" cx ON cx.id_convocatoria = c.id_convocatoria
-          LEFT JOIN public."SPYP_ExtensionesAulicas"        x  ON x.id_extension = cx.id_extension
+          JOIN public."SIAC_ConvocatoriasXRegionales" cr
+            ON cr.id_convocatoria = c.id_convocatoria
+          JOIN public."SPYP_Regionales" r
+            ON r.id_facultad = cr.id_facultad
+          JOIN public."SIAC_ConvocatoriasXEspecialidades" ce
+            ON ce.id_convocatoria = c.id_convocatoria
+          JOIN public."SPYP_Especialidades" e
+            ON e.id_especialidad = ce.id_especialidad
+          LEFT JOIN public."SIAC_ConvocatoriasXExtensiones" cx
+            ON cx.id_convocatoria = c.id_convocatoria
+          LEFT JOIN public."SPYP_ExtensionesAulicas" x
+            ON x.id_extension = cx.id_extension
           WHERE c.id_convocatoria = ?
-          ORDER BY r.nombre NULLS LAST, x.nombre NULLS LAST
+          ORDER BY r.nombre, e.nombre, x.nombre NULLS LAST
         }, id]
       )
     )
 
-    sedes = sedes_rows.map do |sr|
-      regional =
-        if sr["regional_id"].present?
-          OpenStruct.new(id: sr["regional_id"].to_i, nombre: sr["regional_nombre"])
-        end
+    filas = filas_rows.map do |fr|
+      regional = OpenStruct.new(
+        id: fr["regional_id"].to_i,
+        nombre: fr["regional_nombre"]
+      )
 
-      # Si hay extensión, mostramos la extensión; si no, mostramos "-" (pero mantenemos regional)
+      especialidad = OpenStruct.new(
+        id: fr["especialidad_id"].to_i,
+        nombre: fr["especialidad_nombre"]
+      )
+
       OpenStruct.new(
-        id: (sr["extension_id"] || sr["regional_id"]).to_i,
-        nombre: (sr["extension_nombre"].presence || "-"),
-        regional: regional
+        regional: regional,
+        especialidad: especialidad,
+        extension_id: fr["extension_id"].presence,
+        extension_nombre: fr["extension_nombre"].presence || "-"
       )
     end
 
-    # Evitar duplicados por joins (mismo regional/extensión repetidos)
-    sedes.uniq! { |s| [s.regional&.id, s.nombre] }
+    filas.uniq! do |f|
+      [
+        f.regional.id,
+        f.especialidad.id,
+        f.extension_id.to_s
+      ]
+    end
 
-    # 4) Usuarios por regional (esto depende de tu modelo/local DB)
-    #    Tu vista usa @clientes_por_regional[regional_id] => usuario (con firstname/lastname)
-    regional_ids = sedes.map { |s| s.regional&.id }.compact.uniq
-
-    # Ajustá esta parte a tu modelo real. Te dejo una implementación segura:
     @clientes_por_regional = {}
 
-    # 5) Paginación como espera la vista
-    @sedes = Kaminari.paginate_array(sedes).page(params[:page]).per(10)
+    @filas_convocatoria = Kaminari.paginate_array(filas).page(params[:page]).per(10)
   end
 
 
